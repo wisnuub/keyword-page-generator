@@ -1004,6 +1004,198 @@
   }
 }
 
+/* ========================================
+   Progress Bar (AJAX Batch)
+   ======================================== */
+
+.kpg-progress-container {
+  margin-top: var(--kpg-spacing-lg);
+  padding: var(--kpg-spacing-lg);
+  background-color: var(--kpg-color-lighter);
+  border: 1px solid var(--kpg-color-border-light);
+  border-radius: var(--kpg-border-radius);
+}
+
+.kpg-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--kpg-spacing-md);
+}
+
+.kpg-progress-text {
+  font-weight: 600;
+  font-size: var(--kpg-font-size-base);
+  color: var(--kpg-color-dark);
+}
+
+.kpg-progress-bar {
+  height: 12px;
+  background-color: var(--kpg-color-border-light);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: var(--kpg-spacing-md);
+}
+
+.kpg-progress-fill {
+  height: 100%;
+  background-color: var(--kpg-color-primary);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.kpg-progress-fill.kpg-progress-error {
+  background-color: var(--kpg-color-danger);
+}
+
+.kpg-progress-cancel {
+  color: var(--kpg-color-danger);
+  border-color: var(--kpg-color-danger);
+}
+
+.kpg-progress-cancel:hover:not(:disabled) {
+  background-color: var(--kpg-color-danger);
+  color: var(--kpg-color-white);
+}
+
+.kpg-progress-log {
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: var(--kpg-font-size-sm);
+  border: 1px solid var(--kpg-color-border-light);
+  border-radius: var(--kpg-border-radius);
+  background-color: var(--kpg-color-white);
+  padding: var(--kpg-spacing-sm);
+}
+
+.kpg-log-entry {
+  padding: var(--kpg-spacing-xs) var(--kpg-spacing-sm);
+  border-bottom: 1px solid var(--kpg-color-border-light);
+}
+
+.kpg-log-entry:last-child {
+  border-bottom: none;
+}
+
+.kpg-log-warning {
+  color: #856404;
+  font-size: var(--kpg-font-size-sm);
+}
+
+/* ========================================
+   Batch Summary
+   ======================================== */
+
+.kpg-batch-summary {
+  margin-top: var(--kpg-spacing-md);
+}
+
+.kpg-batch-summary-inner {
+  padding: var(--kpg-spacing-lg);
+  background-color: rgba(40, 167, 69, 0.08);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  border-radius: var(--kpg-border-radius);
+}
+
+.kpg-batch-summary-inner h3 {
+  margin: 0 0 var(--kpg-spacing-sm) 0;
+  font-size: var(--kpg-font-size-lg);
+  color: var(--kpg-color-dark);
+}
+
+.kpg-batch-summary-inner p {
+  margin: 0;
+  color: var(--kpg-color-text);
+}
+
+/* ========================================
+   CSV Import
+   ======================================== */
+
+.kpg-csv-import-section {
+  display: flex;
+  align-items: center;
+  gap: var(--kpg-spacing-md);
+  margin-top: var(--kpg-spacing-sm);
+}
+
+.kpg-csv-pair-import {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kpg-spacing-xs);
+  cursor: pointer;
+  margin-top: var(--kpg-spacing-xs);
+}
+
+.kpg-btn-sm {
+  padding: var(--kpg-spacing-sm) var(--kpg-spacing-md);
+  font-size: var(--kpg-font-size-sm);
+}
+
+.kpg-btn-xs {
+  padding: var(--kpg-spacing-xs) var(--kpg-spacing-sm);
+  font-size: var(--kpg-font-size-sm);
+}
+
+/* ========================================
+   Schedule Panel
+   ======================================== */
+
+.kpg-schedule-panel {
+  width: 100%;
+  margin-top: var(--kpg-spacing-md);
+  padding: var(--kpg-spacing-lg);
+  background-color: var(--kpg-color-lighter);
+  border: 1px solid var(--kpg-color-border-light);
+  border-radius: var(--kpg-border-radius);
+  display: flex;
+  flex-direction: column;
+  gap: var(--kpg-spacing-md);
+}
+
+/* ========================================
+   Cron Job Status Card
+   ======================================== */
+
+.kpg-job-status-card {
+  margin-bottom: var(--kpg-spacing-lg);
+}
+
+.kpg-job-status-card .kpg-progress-bar {
+  margin-bottom: var(--kpg-spacing-sm);
+}
+
+.kpg-job-results-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--kpg-spacing-sm) 0;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.kpg-job-results-list li {
+  padding: var(--kpg-spacing-xs) 0;
+  font-size: var(--kpg-font-size-sm);
+  border-bottom: 1px solid var(--kpg-color-border-light);
+}
+
+.kpg-cron-notice {
+  font-size: var(--kpg-font-size-sm);
+  color: var(--kpg-color-text-light);
+  margin: var(--kpg-spacing-sm) 0 0 0;
+  padding: var(--kpg-spacing-sm) var(--kpg-spacing-md);
+  background-color: rgba(23, 162, 184, 0.08);
+  border-left: 3px solid var(--kpg-color-info);
+  border-radius: 2px;
+}
+
+.kpg-cron-notice code {
+  background-color: rgba(0, 0, 0, 0.06);
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: var(--kpg-font-size-sm);
+}
+
 /* Screen reader only class */
 .sr-only {
   position: absolute;

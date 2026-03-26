@@ -1,6 +1,6 @@
 # Keyword Page Generator
 
-> **v2.0** — Generate multiple page/post variations by replacing keywords across your content, with optional AI-powered unique rewriting.
+> **v2.1** — Generate multiple page/post variations by replacing keywords across your content, with optional AI-powered unique rewriting.
 
 A free WordPress plugin that duplicates a base page or post by replacing one or more keywords with a list of alternatives — perfect for location pages, service variations, or any repeatable content pattern. Supports matrix (cross-product) generation and AI content rewriting via OpenAI or Anthropic.
 
@@ -69,6 +69,16 @@ Instead of manually duplicating pages and find-replacing text, the plugin:
 
 ## Changelog
 
+### v2.1
+- AJAX batch processing with live progress bar (no more page hanging during generation)
+- Cancel button to stop mid-batch
+- CSV import for keyword lists (bulk import with headers as find keywords, or per-pair import)
+- Scheduled generation via WP-Cron (background queue or timed publishing)
+- Job status panel showing active/completed scheduled jobs
+- Cron lock to prevent duplicate processing
+- Plugin deactivation cleanup (clears cron hooks, transients, and options)
+- Refactored page creation into reusable `kpg_create_single_page()` function
+
 ### v2.0
 - Rebranded from Suburb Page Generator to Keyword Page Generator
 - Multi-keyword pair support with matrix and independent generation modes
@@ -96,9 +106,9 @@ Instead of manually duplicating pages and find-replacing text, the plugin:
 - [x] Builder auto-detection and builder-aware AI extraction
 - [x] Blog post support
 - [x] Preview toggle with limit warning
-- [ ] Batch processing with progress bar for large generation runs
-- [ ] Scheduled generation via WP-Cron
-- [ ] CSV import for keyword lists
+- [x] Batch processing with progress bar for large generation runs
+- [x] Scheduled generation via WP-Cron
+- [x] CSV import for keyword lists
 - [ ] Template library (save/load keyword pair configurations)
 - [ ] WP-CLI support for headless generation
 

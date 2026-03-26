@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Keyword Page Generator
  * Description: Generates keyword-specific pages by replacing multiple placeholders in content and metadata. Supports matrix generation, AI rewriting, Divi, Elementor, WPBakery, Gutenberg and Yoast SEO.
- * Version: 2.0
+ * Version: 2.1
  * Author: Wisnu
  * Author URI: https://wisnuub.github.io/
  * Based on: Suburb Page Generator by Steven Chun
@@ -17,6 +17,20 @@ add_action('admin_menu', 'kpg_add_admin_menu');
 add_action('admin_init', 'kpg_register_settings');
 add_action('admin_init', 'kpg_elementor_meta_normalizer_run_once');
 add_action('admin_enqueue_scripts', 'kpg_enqueue_admin_assets');
+
+// AJAX batch processing
+add_action('wp_ajax_kpg_start_batch', 'kpg_ajax_start_batch');
+add_action('wp_ajax_kpg_process_step', 'kpg_ajax_process_step');
+add_action('wp_ajax_kpg_cancel_batch', 'kpg_ajax_cancel_batch');
+
+// WP-Cron scheduled generation
+add_action('kpg_cron_process_job', 'kpg_cron_process_single_step');
+add_filter('cron_schedules', 'kpg_add_cron_interval');
+add_action('wp_ajax_kpg_schedule_job', 'kpg_ajax_schedule_job');
+add_action('wp_ajax_kpg_clear_job', 'kpg_ajax_clear_job');
+
+// Cleanup on deactivation
+register_deactivation_hook(__FILE__, 'kpg_deactivation');
 
 // ============================================================
 // Admin Menu & Assets
@@ -53,16 +67,17 @@ function kpg_enqueue_admin_assets() {
 
     if (!in_array($current_screen->id, $allowed_screens, true)) return;
 
-    wp_enqueue_style('kpg-admin-styles', plugins_url('assets/kpg-admin-styles.css', __FILE__), [], '2.0');
+    wp_enqueue_style('kpg-admin-styles', plugins_url('assets/kpg-admin-styles.css', __FILE__), [], '2.1');
     wp_enqueue_script('kpg-admin-script', plugins_url('assets/kpg-admin-script.js', __FILE__), ['jquery'], '2.0', true);
 
     $ai_settings = kpg_get_ai_settings();
     wp_localize_script('kpg-admin-script', 'kpgData', [
-        'nonce'       => wp_create_nonce('kpg_admin_nonce'),
-        'maxPairs'    => KPG_MAX_PAIRS,
-        'pageLimit'   => KPG_PAGE_LIMIT,
+        'ajaxUrl'      => admin_url('admin-ajax.php'),
+        'nonce'        => wp_create_nonce('kpg_admin_nonce'),
+        'maxPairs'     => KPG_MAX_PAIRS,
+        'pageLimit'    => KPG_PAGE_LIMIT,
         'aiConfigured' => !empty($ai_settings['api_key']),
-        'i18n'        => [
+        'i18n'         => [
             'loading' => __('Loading...', 'keyword-page-generator'),
             'error'   => __('An error occurred. Please try again.', 'keyword-page-generator'),
         ],
@@ -311,6 +326,54 @@ function kpg_admin_page() {
         </div>
 
         <div class="kpg-admin-container">
+            <?php
+            $cron_job = get_option('kpg_cron_job');
+            if ($cron_job) :
+                $job_total     = $cron_job['total'] ?? 0;
+                $job_completed = $cron_job['completed'] ?? 0;
+                $job_status    = $cron_job['status'] ?? 'pending';
+                $job_results   = $cron_job['results'] ?? [];
+                $created_count = count(array_filter($job_results, fn($r) => $r['status'] === 'created'));
+                $skipped_count = count(array_filter($job_results, fn($r) => $r['status'] === 'skipped'));
+                $schedule_type = $cron_job['schedule_type'] ?? 'background';
+            ?>
+            <div class="kpg-job-status-card kpg-card">
+                <div class="kpg-card-header">
+                    <h2 class="kpg-card-title">&#128339; Scheduled Job</h2>
+                    <p class="kpg-card-description">
+                        <?php if ($job_status === 'completed') : ?>
+                            Job completed — <?php echo esc_html($created_count); ?> page(s) created<?php echo $skipped_count ? ', ' . esc_html($skipped_count) . ' skipped' : ''; ?>
+                        <?php elseif ($job_status === 'pending') : ?>
+                            Waiting to start (<?php echo esc_html($schedule_type === 'timed' ? 'scheduled for ' . ($cron_job['scheduled_time'] ?? '?') : 'background queue'); ?>)
+                        <?php else : ?>
+                            In progress: <?php echo esc_html($job_completed); ?> of <?php echo esc_html($job_total); ?> pages
+                        <?php endif; ?>
+                    </p>
+                </div>
+                <div class="kpg-job-status-body" style="padding: 1rem 1.5rem;">
+                    <?php if ($job_status !== 'completed' && $job_total > 0) : ?>
+                        <div class="kpg-progress-bar">
+                            <div class="kpg-progress-fill" style="width: <?php echo esc_attr(round($job_completed / $job_total * 100)); ?>%;"></div>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($job_status === 'completed' && !empty($job_results)) : ?>
+                        <ul class="kpg-job-results-list">
+                            <?php foreach ($job_results as $r) : ?>
+                                <li class="kpg-job-result-<?php echo esc_attr($r['status']); ?>">
+                                    <?php echo $r['status'] === 'created' ? '&#9989;' : '&#10060;'; ?>
+                                    <?php echo esc_html($r['title']); ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                    <button type="button" id="kpg-clear-job-btn" class="kpg-btn kpg-btn-outline" style="margin-top: 0.75rem;">
+                        <?php echo $job_status === 'completed' ? 'Clear Results' : 'Cancel Job'; ?>
+                    </button>
+                    <p class="kpg-cron-notice">&#9432; WP-Cron runs on page visits. For reliable scheduling, configure a system cron job pointing to <code>wp-cron.php</code>.</p>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <div class="kpg-form-card kpg-card">
                 <div class="kpg-card-header">
                     <h2 class="kpg-card-title">Generate Pages</h2>
@@ -349,6 +412,13 @@ function kpg_admin_page() {
                                 <span class="kpg-step-number">2</span>
                                 Keyword Replacement Pairs
                             </h3>
+                            <div class="kpg-csv-import-section">
+                                <label class="kpg-btn kpg-btn-outline kpg-btn-sm" for="kpg-csv-bulk-import">
+                                    &#128196; Import CSV
+                                </label>
+                                <input type="file" id="kpg-csv-bulk-import" accept=".csv,.txt" style="display:none;">
+                                <span class="kpg-field-help">Headers = find keywords, rows = replacement values</span>
+                            </div>
                         </div>
 
                         <div id="kpg-pairs-container">
@@ -458,11 +528,47 @@ function kpg_admin_page() {
                             <button type="submit" name="kpg_preview" id="kpg-preview-btn" class="button kpg-btn kpg-btn-secondary" style="display:none;">
                                 <span class="kpg-btn-icon">&#128065;</span> Preview First Page
                             </button>
-                            <button type="submit" name="kpg_submit" class="button kpg-btn kpg-btn-primary">
+                            <button type="submit" name="kpg_submit" id="kpg-generate-btn" class="button kpg-btn kpg-btn-primary">
                                 <span class="kpg-btn-icon">&#10024;</span> Generate All Pages
+                            </button>
+                            <button type="button" id="kpg-schedule-btn" class="kpg-btn kpg-btn-outline">
+                                <span class="kpg-btn-icon">&#128339;</span> Schedule
+                            </button>
+                        </div>
+
+                        <!-- Schedule Panel -->
+                        <div id="kpg-schedule-panel" class="kpg-schedule-panel" style="display:none;">
+                            <div class="kpg-form-field">
+                                <label class="kpg-label">Schedule Mode</label>
+                                <select id="kpg-schedule-mode" class="kpg-select">
+                                    <option value="background">Background queue (process now via cron)</option>
+                                    <option value="timed">Schedule for a specific date &amp; time</option>
+                                </select>
+                            </div>
+                            <div class="kpg-form-field" id="kpg-schedule-datetime-field" style="display:none;">
+                                <label class="kpg-label">Date &amp; Time</label>
+                                <input type="datetime-local" id="kpg-schedule-datetime" class="kpg-input">
+                            </div>
+                            <button type="button" id="kpg-schedule-confirm" class="kpg-btn kpg-btn-primary kpg-btn-sm">
+                                &#10003; Confirm Schedule
                             </button>
                         </div>
                     </div>
+
+                    <!-- Progress Bar (shown during AJAX batch) -->
+                    <div id="kpg-progress-container" class="kpg-progress-container" style="display:none;">
+                        <div class="kpg-progress-header">
+                            <span class="kpg-progress-text" id="kpg-progress-text">Preparing...</span>
+                            <button type="button" id="kpg-progress-cancel" class="kpg-btn kpg-btn-outline kpg-btn-sm kpg-progress-cancel">Cancel</button>
+                        </div>
+                        <div class="kpg-progress-bar">
+                            <div class="kpg-progress-fill" id="kpg-progress-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="kpg-progress-log" id="kpg-progress-log"></div>
+                    </div>
+
+                    <!-- Batch Summary (shown after AJAX batch completes) -->
+                    <div id="kpg-batch-summary" class="kpg-batch-summary" style="display:none;"></div>
                 </form>
             </div>
 
@@ -792,6 +898,54 @@ function kpg_generate_preview() {
     ]];
 }
 
+/**
+ * Create a single page from a replacement spec.
+ * Used by both synchronous form processing and AJAX batch processing.
+ */
+function kpg_create_single_page($base_page, $spec, $post_type, $builder, $ai_enabled, $ai_settings, $ai_prompt) {
+    $new_title   = kpg_replace_title($base_page->post_title, $spec);
+    $new_slug    = kpg_replace_slug($base_page->post_name, $spec);
+    $new_content = kpg_replace_content($base_page->post_content, $spec);
+    $warning     = '';
+
+    // AI rewrite if enabled
+    if ($ai_enabled && $ai_settings && !empty($ai_settings['api_key'])) {
+        $ai_result = kpg_ai_rewrite($new_content, $base_page->ID, $spec, $ai_settings, $ai_prompt);
+        if ($ai_result['success']) {
+            $new_content = $ai_result['content'];
+        } else {
+            $warning = $new_title . ': ' . $ai_result['error'];
+        }
+        sleep(1); // Rate limiting
+    }
+
+    if (get_page_by_path($new_slug)) {
+        $new_slug .= '-' . wp_generate_password(6, false);
+    }
+
+    $new_page_id = wp_insert_post([
+        'post_title'   => $new_title,
+        'post_name'    => $new_slug,
+        'post_content' => $new_content,
+        'post_status'  => 'publish',
+        'post_type'    => $post_type,
+        'post_parent'  => $post_type === 'page' ? $base_page->post_parent : 0,
+    ]);
+
+    if ($new_page_id && !is_wp_error($new_page_id)) {
+        kpg_copy_post_meta($base_page->ID, $new_page_id, $spec);
+
+        // AI rewrite for Elementor meta if applicable
+        if ($ai_enabled && $builder === 'elementor' && $ai_settings && !empty($ai_settings['api_key'])) {
+            kpg_ai_rewrite_elementor_meta($new_page_id, $spec, $ai_settings, $ai_prompt);
+        }
+
+        return ['status' => 'created', 'title' => $new_title, 'post_id' => $new_page_id, 'warning' => $warning];
+    }
+
+    return ['status' => 'skipped', 'title' => $new_title, 'post_id' => 0, 'warning' => $warning];
+}
+
 function kpg_process_form() {
     if (!current_user_can('manage_options')) wp_die(__('Unauthorized'));
 
@@ -817,7 +971,6 @@ function kpg_process_form() {
         return;
     }
 
-    $original_content = $base_page->post_content;
     $builder          = kpg_detect_page_builder($base_page_id);
     $ai_settings      = $ai_enabled ? kpg_get_ai_settings() : null;
     $created_pages    = [];
@@ -825,45 +978,15 @@ function kpg_process_form() {
     $ai_warnings      = [];
 
     foreach ($page_specs as $spec) {
-        $new_title   = kpg_replace_title($base_page->post_title, $spec);
-        $new_slug    = kpg_replace_slug($base_page->post_name, $spec);
-        $new_content = kpg_replace_content($original_content, $spec);
+        $result = kpg_create_single_page($base_page, $spec, $post_type, $builder, $ai_enabled, $ai_settings, $ai_prompt);
 
-        // AI rewrite if enabled
-        if ($ai_enabled && $ai_settings && !empty($ai_settings['api_key'])) {
-            $ai_result = kpg_ai_rewrite($new_content, $base_page_id, $spec, $ai_settings, $ai_prompt);
-            if ($ai_result['success']) {
-                $new_content = $ai_result['content'];
-            } else {
-                $ai_warnings[] = $new_title . ': ' . $ai_result['error'];
-            }
-            sleep(1); // Rate limiting
-        }
-
-        if (get_page_by_path($new_slug)) {
-            $new_slug .= '-' . wp_generate_password(6, false);
-        }
-
-        $new_page_id = wp_insert_post([
-            'post_title'   => $new_title,
-            'post_name'    => $new_slug,
-            'post_content' => $new_content,
-            'post_status'  => 'publish',
-            'post_type'    => $post_type,
-            'post_parent'  => $post_type === 'page' ? $base_page->post_parent : 0,
-        ]);
-
-        if ($new_page_id && !is_wp_error($new_page_id)) {
-            kpg_copy_post_meta($base_page_id, $new_page_id, $spec);
-
-            // AI rewrite for Elementor meta if applicable
-            if ($ai_enabled && $builder === 'elementor' && $ai_settings && !empty($ai_settings['api_key'])) {
-                kpg_ai_rewrite_elementor_meta($new_page_id, $spec, $ai_settings, $ai_prompt);
-            }
-
-            $created_pages[] = $new_title;
+        if ($result['status'] === 'created') {
+            $created_pages[] = $result['title'];
         } else {
-            $skipped_pages[] = $new_title;
+            $skipped_pages[] = $result['title'];
+        }
+        if (!empty($result['warning'])) {
+            $ai_warnings[] = $result['warning'];
         }
     }
 
@@ -1235,4 +1358,279 @@ function kpg_elementor_meta_normalizer_run_once() {
             esc_attr($class), intval($checked_count), intval($fixed_count)
         );
     });
+}
+
+// ============================================================
+// AJAX Batch Processing
+// ============================================================
+
+function kpg_ajax_start_batch() {
+    check_ajax_referer('kpg_admin_nonce', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+    $base_page_id = intval($_POST['base_page'] ?? 0);
+    $base_page    = get_post($base_page_id);
+    $pairs        = kpg_parse_pairs_from_post();
+    $mode         = sanitize_text_field($_POST['generation_mode'] ?? 'matrix');
+    $post_type    = in_array($_POST['post_type'] ?? 'page', ['page', 'post'], true) ? $_POST['post_type'] : 'page';
+    $ai_enabled   = !empty($_POST['ai_rewrite']);
+    $ai_prompt    = sanitize_textarea_field($_POST['ai_prompt'] ?? '');
+
+    if (!$base_page || empty($pairs)) {
+        wp_send_json_error('Invalid base page or keyword pairs.');
+    }
+
+    $page_specs = kpg_build_page_specs($pairs, $mode);
+
+    if (count($page_specs) > KPG_PAGE_LIMIT) {
+        wp_send_json_error('Too many pages. Maximum is ' . KPG_PAGE_LIMIT . '. You requested ' . count($page_specs) . '.');
+    }
+
+    kpg_delete_old_previews();
+
+    $builder     = kpg_detect_page_builder($base_page_id);
+    $ai_settings = $ai_enabled ? kpg_get_ai_settings() : null;
+    $job_id      = wp_generate_password(16, false);
+
+    set_transient('kpg_batch_' . $job_id, [
+        'base_page_id' => $base_page_id,
+        'page_specs'   => $page_specs,
+        'post_type'    => $post_type,
+        'builder'      => $builder,
+        'ai_enabled'   => $ai_enabled,
+        'ai_settings'  => $ai_settings,
+        'ai_prompt'    => $ai_prompt,
+        'total'        => count($page_specs),
+        'completed'    => 0,
+        'results'      => [],
+        'cancelled'    => false,
+    ], 2 * HOUR_IN_SECONDS);
+
+    wp_send_json_success(['job_id' => $job_id, 'total' => count($page_specs)]);
+}
+
+function kpg_ajax_process_step() {
+    check_ajax_referer('kpg_admin_nonce', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+    $job_id = sanitize_text_field($_POST['job_id'] ?? '');
+    $step   = intval($_POST['step'] ?? 0);
+    $job    = get_transient('kpg_batch_' . $job_id);
+
+    if (!$job) {
+        wp_send_json_error('Job not found or expired.');
+    }
+
+    if ($job['cancelled']) {
+        wp_send_json_error('Job was cancelled.');
+    }
+
+    if ($step >= $job['total']) {
+        wp_send_json_error('All steps already processed.');
+    }
+
+    $base_page = get_post($job['base_page_id']);
+    if (!$base_page) {
+        wp_send_json_error('Base page no longer exists.');
+    }
+
+    $spec   = $job['page_specs'][$step];
+    $result = kpg_create_single_page(
+        $base_page, $spec, $job['post_type'], $job['builder'],
+        $job['ai_enabled'], $job['ai_settings'], $job['ai_prompt']
+    );
+
+    $job['results'][]  = $result;
+    $job['completed']  = $step + 1;
+    set_transient('kpg_batch_' . $job_id, $job, 2 * HOUR_IN_SECONDS);
+
+    wp_send_json_success([
+        'step'      => $step,
+        'result'    => $result,
+        'remaining' => $job['total'] - $job['completed'],
+    ]);
+}
+
+function kpg_ajax_cancel_batch() {
+    check_ajax_referer('kpg_admin_nonce', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+    $job_id = sanitize_text_field($_POST['job_id'] ?? '');
+    $job    = get_transient('kpg_batch_' . $job_id);
+
+    if (!$job) {
+        wp_send_json_error('Job not found.');
+    }
+
+    $job['cancelled'] = true;
+    set_transient('kpg_batch_' . $job_id, $job, 2 * HOUR_IN_SECONDS);
+
+    $created = count(array_filter($job['results'], fn($r) => $r['status'] === 'created'));
+    wp_send_json_success([
+        'message'   => 'Job cancelled.',
+        'completed' => $job['completed'],
+        'created'   => $created,
+    ]);
+}
+
+// ============================================================
+// WP-Cron Scheduled Generation
+// ============================================================
+
+function kpg_add_cron_interval($schedules) {
+    $schedules['kpg_every_minute'] = [
+        'interval' => 60,
+        'display'  => __('Every Minute (KPG)', 'keyword-page-generator'),
+    ];
+    return $schedules;
+}
+
+function kpg_ajax_schedule_job() {
+    check_ajax_referer('kpg_admin_nonce', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+    // Check for existing job
+    $existing = get_option('kpg_cron_job');
+    if ($existing && ($existing['status'] ?? '') === 'in_progress') {
+        wp_send_json_error('A scheduled job is already in progress. Clear it first.');
+    }
+
+    $base_page_id = intval($_POST['base_page'] ?? 0);
+    $base_page    = get_post($base_page_id);
+    $pairs        = kpg_parse_pairs_from_post();
+    $mode         = sanitize_text_field($_POST['generation_mode'] ?? 'matrix');
+    $post_type    = in_array($_POST['post_type'] ?? 'page', ['page', 'post'], true) ? $_POST['post_type'] : 'page';
+    $ai_enabled   = !empty($_POST['ai_rewrite']);
+    $ai_prompt    = sanitize_textarea_field($_POST['ai_prompt'] ?? '');
+    $schedule_mode = sanitize_text_field($_POST['schedule_mode'] ?? 'background');
+    $schedule_time = sanitize_text_field($_POST['schedule_time'] ?? '');
+
+    if (!$base_page || empty($pairs)) {
+        wp_send_json_error('Invalid base page or keyword pairs.');
+    }
+
+    $page_specs = kpg_build_page_specs($pairs, $mode);
+
+    if (count($page_specs) > KPG_PAGE_LIMIT) {
+        wp_send_json_error('Too many pages. Maximum is ' . KPG_PAGE_LIMIT . '.');
+    }
+
+    $builder     = kpg_detect_page_builder($base_page_id);
+    $ai_settings = $ai_enabled ? kpg_get_ai_settings() : null;
+
+    $job_data = [
+        'base_page_id'  => $base_page_id,
+        'page_specs'    => $page_specs,
+        'post_type'     => $post_type,
+        'builder'       => $builder,
+        'ai_enabled'    => $ai_enabled,
+        'ai_settings'   => $ai_settings,
+        'ai_prompt'     => $ai_prompt,
+        'total'         => count($page_specs),
+        'completed'     => 0,
+        'results'       => [],
+        'status'        => 'pending',
+        'schedule_type' => $schedule_mode,
+        'scheduled_time' => '',
+    ];
+
+    // Clear any existing scheduled hook
+    wp_clear_scheduled_hook('kpg_cron_process_job');
+
+    if ($schedule_mode === 'timed' && !empty($schedule_time)) {
+        $timestamp = strtotime($schedule_time);
+        if (!$timestamp || $timestamp < time()) {
+            wp_send_json_error('Invalid or past date/time.');
+        }
+        $job_data['scheduled_time'] = $schedule_time;
+        wp_schedule_single_event($timestamp, 'kpg_cron_process_job');
+    } else {
+        // Background: start immediately
+        $job_data['status'] = 'in_progress';
+        wp_schedule_event(time(), 'kpg_every_minute', 'kpg_cron_process_job');
+    }
+
+    update_option('kpg_cron_job', $job_data);
+
+    wp_send_json_success([
+        'message' => $schedule_mode === 'timed'
+            ? 'Job scheduled for ' . $schedule_time
+            : 'Background job started. Pages will be created via WP-Cron.',
+        'total' => count($page_specs),
+    ]);
+}
+
+function kpg_cron_process_single_step() {
+    $job = get_option('kpg_cron_job');
+    if (!$job || ($job['status'] ?? '') === 'completed') {
+        wp_clear_scheduled_hook('kpg_cron_process_job');
+        return;
+    }
+
+    // Acquire lock to prevent double-processing
+    if (get_transient('kpg_cron_lock')) return;
+    set_transient('kpg_cron_lock', true, 60);
+
+    // If this is a timed job that was pending, start it now and schedule recurring
+    if (($job['status'] ?? '') === 'pending') {
+        $job['status'] = 'in_progress';
+        wp_clear_scheduled_hook('kpg_cron_process_job');
+        wp_schedule_event(time(), 'kpg_every_minute', 'kpg_cron_process_job');
+    }
+
+    $step = $job['completed'];
+    if ($step >= $job['total']) {
+        $job['status'] = 'completed';
+        update_option('kpg_cron_job', $job);
+        wp_clear_scheduled_hook('kpg_cron_process_job');
+        delete_transient('kpg_cron_lock');
+        return;
+    }
+
+    $base_page = get_post($job['base_page_id']);
+    if (!$base_page) {
+        $job['status'] = 'completed';
+        update_option('kpg_cron_job', $job);
+        wp_clear_scheduled_hook('kpg_cron_process_job');
+        delete_transient('kpg_cron_lock');
+        return;
+    }
+
+    $spec   = $job['page_specs'][$step];
+    $result = kpg_create_single_page(
+        $base_page, $spec, $job['post_type'], $job['builder'],
+        $job['ai_enabled'], $job['ai_settings'], $job['ai_prompt']
+    );
+
+    $job['results'][] = $result;
+    $job['completed'] = $step + 1;
+
+    if ($job['completed'] >= $job['total']) {
+        $job['status'] = 'completed';
+        wp_clear_scheduled_hook('kpg_cron_process_job');
+    }
+
+    update_option('kpg_cron_job', $job);
+    delete_transient('kpg_cron_lock');
+}
+
+function kpg_ajax_clear_job() {
+    check_ajax_referer('kpg_admin_nonce', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+    wp_clear_scheduled_hook('kpg_cron_process_job');
+    delete_option('kpg_cron_job');
+    delete_transient('kpg_cron_lock');
+
+    wp_send_json_success(['message' => 'Job cleared.']);
+}
+
+function kpg_deactivation() {
+    wp_clear_scheduled_hook('kpg_cron_process_job');
+    delete_option('kpg_cron_job');
+    delete_transient('kpg_cron_lock');
+
+    // Clean up batch transients
+    global $wpdb;
+    $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_kpg_batch_%' OR option_name LIKE '_transient_timeout_kpg_batch_%'");
 }

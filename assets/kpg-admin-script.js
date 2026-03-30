@@ -427,6 +427,9 @@
                 this.cancelled = false;
                 this.results = [];
 
+                // Serialize BEFORE disabling — disabled fields are excluded by jQuery serialize()
+                var formData = KPG.form.serialize();
+
                 // Show progress UI
                 $('#kpg-progress-container').slideDown(200);
                 $('#kpg-batch-summary').hide().empty();
@@ -439,7 +442,7 @@
                 $.ajax({
                     url: kpg.ajaxUrl,
                     type: 'POST',
-                    data: KPG.form.serialize() + '&action=kpg_start_batch&nonce=' + kpg.nonce,
+                    data: formData + '&action=kpg_start_batch&nonce=' + kpg.nonce,
                     dataType: 'json',
                     success: function(response) {
                         if (response.success) {

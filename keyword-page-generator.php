@@ -67,8 +67,8 @@ function kpg_enqueue_admin_assets() {
 
     if (!in_array($current_screen->id, $allowed_screens, true)) return;
 
-    wp_enqueue_style('kpg-admin-styles', plugins_url('assets/kpg-admin-styles.css', __FILE__), [], '2.1');
-    wp_enqueue_script('kpg-admin-script', plugins_url('assets/kpg-admin-script.js', __FILE__), ['jquery'], '2.0', true);
+    wp_enqueue_style('kpg-admin-styles', plugins_url('assets/kpg-admin-styles.css', __FILE__), [], '2.2');
+    wp_enqueue_script('kpg-admin-script', plugins_url('assets/kpg-admin-script.js', __FILE__), ['jquery'], '2.2', true);
 
     $ai_settings = kpg_get_ai_settings();
     wp_localize_script('kpg-admin-script', 'kpgData', [
@@ -158,7 +158,7 @@ function kpg_ai_settings_page() {
                 <p class="kpg-page-subtitle">Configure AI content rewriting for unique page generation</p>
             </div>
         </div>
-        <div class="kpg-admin-container">
+        <div class="kpg-admin-container kpg-admin-container--settings">
             <div class="kpg-card">
                 <div class="kpg-card-header">
                     <h2 class="kpg-card-title">AI Provider Configuration</h2>
@@ -175,7 +175,7 @@ function kpg_ai_settings_page() {
                             </select>
                         </div>
 
-                        <div class="kpg-form-field" style="margin-top:1rem;">
+                        <div class="kpg-form-field">
                             <label for="kpg_api_key" class="kpg-label">API Key</label>
                             <input type="password" id="kpg_api_key" name="kpg_ai_settings[api_key]"
                                    class="kpg-input" value="<?php echo esc_attr($masked_key); ?>"
@@ -183,7 +183,7 @@ function kpg_ai_settings_page() {
                             <p class="kpg-field-help">Your key is stored encrypted. Leave unchanged to keep the existing key.</p>
                         </div>
 
-                        <div class="kpg-form-field" style="margin-top:1rem;">
+                        <div class="kpg-form-field">
                             <label for="kpg_model" class="kpg-label">Model</label>
                             <select id="kpg_model" name="kpg_ai_settings[model]" class="kpg-select">
                                 <?php foreach ($default_models as $provider => $models) :
@@ -198,7 +198,7 @@ function kpg_ai_settings_page() {
                             </select>
                         </div>
 
-                        <div class="kpg-form-field" style="margin-top:1rem;">
+                        <div class="kpg-form-field">
                             <label for="kpg_custom_prompt" class="kpg-label">Custom Prompt (optional)</label>
                             <textarea id="kpg_custom_prompt" name="kpg_ai_settings[custom_prompt]"
                                       class="kpg-input kpg-textarea" rows="4"
@@ -211,12 +211,12 @@ function kpg_ai_settings_page() {
             </div>
 
             <!-- Detected Builders Card -->
-            <div class="kpg-card" style="margin-top:2rem;">
+            <div class="kpg-card">
                 <div class="kpg-card-header">
                     <h2 class="kpg-card-title">Detected Page Builders</h2>
                     <p class="kpg-card-description">Builders found on your WordPress installation</p>
                 </div>
-                <div class="kpg-form" style="padding:1.5rem;">
+                <div class="kpg-form">
                     <ul class="kpg-builder-list">
                         <?php
                         $all_builders = ['elementor' => 'Elementor', 'divi' => 'Divi', 'wpbakery' => 'WPBakery', 'gutenberg' => 'Gutenberg', 'classic' => 'Classic Editor'];
@@ -321,7 +321,7 @@ function kpg_admin_page() {
                     <span class="kpg-icon">&#128196;</span>
                     Keyword Page Generator
                 </h1>
-                <p class="kpg-page-subtitle">Generate multiple pages or posts by replacing keywords across your content</p>
+                <p class="kpg-page-subtitle">Generate multiple pages or posts by replacing keywords in your templates</p>
             </div>
         </div>
 
@@ -611,21 +611,21 @@ function kpg_admin_page() {
             </div>
             <?php endif; ?>
 
-            <!-- How It Works -->
+            <!-- Sidebar: How It Works -->
             <div class="kpg-info-card kpg-card">
                 <div class="kpg-card-header">
                     <h2 class="kpg-card-title">How It Works</h2>
                 </div>
                 <div class="kpg-info-content">
                     <ol class="kpg-info-list">
-                        <li><strong>Select your base page:</strong> Choose the template page containing your content.</li>
-                        <li><strong>Add keyword pairs:</strong> Enter the keyword to find and comma-separated replacement values. Add multiple pairs for different keyword axes (e.g., location + service).</li>
-                        <li><strong>Choose generation mode:</strong> Use Matrix to create every combination, or Independent to replace each pair separately.</li>
-                        <li><strong>Enable AI rewriting (optional):</strong> AI will rewrite text content to be unique per page, avoiding duplicate content.</li>
-                        <li><strong>Preview & Generate:</strong> Check the first page, then generate all variations at once.</li>
+                        <li><strong>Select your base page</strong> — the template to duplicate.</li>
+                        <li><strong>Add keyword pairs</strong> — find keyword + comma-separated replacements.</li>
+                        <li><strong>Choose mode</strong> — Matrix (every combination) or Independent (per pair).</li>
+                        <li><strong>AI rewrite (optional)</strong> — makes each page unique.</li>
+                        <li><strong>Preview then Generate</strong> — review one page first.</li>
                     </ol>
                     <div class="kpg-info-tip">
-                        <strong>Example:</strong> With "Melbourne CBD" &rarr; "Sydney, Brisbane" and "Corporate Venue" &rarr; "Private Dining, Birthday Party", Matrix mode creates 4 pages: every location paired with every service.
+                        <strong>Example:</strong> "Melbourne CBD" &rarr; "Sydney, Brisbane" &times; "Corporate Venue" &rarr; "Private Dining, Birthday Party" = 4 pages in Matrix mode.
                     </div>
                 </div>
             </div>
@@ -769,6 +769,8 @@ function kpg_copy_post_meta($from_post_id, $to_post_id, $replacements) {
     $skip_keys = [
         '_wp_old_slug', '_edit_lock', '_edit_last', '_kpg_preview_flag',
         '_yoast_indexable',
+        // Elementor generates CSS per post-ID; copying it causes broken styles on the new page
+        '_elementor_css',
     ];
 
     foreach ($meta_keys as $meta_key) {

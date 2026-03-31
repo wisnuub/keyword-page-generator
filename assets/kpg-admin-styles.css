@@ -976,6 +976,32 @@
   }
 }
 
+/* ── Sidebar Builder Detection ───────────── */
+.kpg-sidebar-builders {
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.kpg-sidebar-builder-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--kpg-border);
+  font-size: 13px;
+}
+
+.kpg-sidebar-builder-row:last-child {
+  border-bottom: none;
+}
+
+.kpg-sidebar-builder-name {
+  color: var(--kpg-text);
+  font-weight: 500;
+}
+
 /* ── Tab Navigation ──────────────────────── */
 .kpg-tabs-nav {
   display: flex;

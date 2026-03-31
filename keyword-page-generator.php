@@ -69,8 +69,8 @@ function kpg_enqueue_admin_assets() {
 
     if (!in_array($current_screen->id, $allowed_screens, true)) return;
 
-    wp_enqueue_style('kpg-admin-styles', plugins_url('assets/kpg-admin-styles.css', __FILE__), [], '2.3');
-    wp_enqueue_script('kpg-admin-script', plugins_url('assets/kpg-admin-script.js', __FILE__), ['jquery'], '2.3', true);
+    wp_enqueue_style('kpg-admin-styles', plugins_url('assets/kpg-admin-styles.css', __FILE__), [], '2.4');
+    wp_enqueue_script('kpg-admin-script', plugins_url('assets/kpg-admin-script.js', __FILE__), ['jquery'], '2.4', true);
 
     $ai_settings = kpg_get_ai_settings();
     wp_localize_script('kpg-admin-script', 'kpgData', [
@@ -588,6 +588,28 @@ function kpg_admin_page() {
 
             <!-- Sidebar -->
             <div class="kpg-sidebar-col">
+                <!-- Detected Page Builders -->
+                <div class="kpg-card" style="margin-bottom:16px;">
+                    <div class="kpg-card-header">
+                        <h2 class="kpg-card-title">Page Builders</h2>
+                    </div>
+                    <div class="kpg-sidebar-builders">
+                        <?php
+                        $all_builders = ['elementor' => 'Elementor', 'divi' => 'Divi', 'wpbakery' => 'WPBakery', 'gutenberg' => 'Gutenberg', 'classic' => 'Classic Editor'];
+                        foreach ($all_builders as $key => $name) :
+                            $active = in_array($key, $builders, true);
+                        ?>
+                        <div class="kpg-sidebar-builder-row">
+                            <span class="kpg-sidebar-builder-name"><?php echo esc_html($name); ?></span>
+                            <span class="kpg-builder-pill <?php echo $active ? 'kpg-pill-active' : 'kpg-pill-inactive'; ?>">
+                                <?php echo $active ? '&#10003; Active' : 'None'; ?>
+                            </span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- How It Works -->
                 <div class="kpg-info-card kpg-card">
                     <div class="kpg-card-header">
                         <h2 class="kpg-card-title">How It Works</h2>

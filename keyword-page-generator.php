@@ -154,11 +154,17 @@ function kpg_ai_settings_page() {
     <div class="kpg-admin-wrapper">
         <div class="kpg-admin-header">
             <div class="kpg-header-content">
-                <h1 class="kpg-page-title"><span class="kpg-icon">&#9881;</span> AI Settings</h1>
-                <p class="kpg-page-subtitle">Configure AI content rewriting for unique page generation</p>
+                <div class="kpg-header-brand">
+                    <span class="kpg-header-icon">&#9881;</span>
+                    <div>
+                        <h1 class="kpg-page-title">AI Settings</h1>
+                        <p class="kpg-page-subtitle">Configure AI content rewriting for unique page generation</p>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="kpg-admin-container kpg-admin-container--settings">
+        <div class="kpg-admin-outer">
+        <div class="kpg-admin-container--settings">
             <div class="kpg-card">
                 <div class="kpg-card-header">
                     <h2 class="kpg-card-title">AI Provider Configuration</h2>
@@ -231,8 +237,9 @@ function kpg_ai_settings_page() {
                     </ul>
                 </div>
             </div>
-        </div>
-    </div>
+        </div><!-- /.kpg-admin-container--settings -->
+        </div><!-- /.kpg-admin-outer -->
+    </div><!-- /.kpg-admin-wrapper -->
     <?php
 }
 
@@ -317,15 +324,18 @@ function kpg_admin_page() {
     <div class="kpg-admin-wrapper">
         <div class="kpg-admin-header">
             <div class="kpg-header-content">
-                <h1 class="kpg-page-title">
-                    <span class="kpg-icon">&#128196;</span>
-                    Keyword Page Generator
-                </h1>
-                <p class="kpg-page-subtitle">Generate multiple pages or posts by replacing keywords in your templates</p>
+                <div class="kpg-header-brand">
+                    <span class="kpg-header-icon">&#128196;</span>
+                    <div>
+                        <h1 class="kpg-page-title">Keyword Page Generator</h1>
+                        <p class="kpg-page-subtitle">Generate multiple pages or posts by replacing keywords in your templates</p>
+                    </div>
+                </div>
+                <span class="kpg-version-badge">v2.2</span>
             </div>
         </div>
 
-        <div class="kpg-admin-container">
+        <div class="kpg-admin-outer">
             <?php
             $cron_job = get_option('kpg_cron_job');
             if ($cron_job) :
@@ -373,6 +383,9 @@ function kpg_admin_page() {
                 </div>
             </div>
             <?php endif; ?>
+
+            <div class="kpg-admin-container">
+            <div class="kpg-main-col">
 
             <div class="kpg-form-card kpg-card">
                 <div class="kpg-card-header">
@@ -611,26 +624,32 @@ function kpg_admin_page() {
             </div>
             <?php endif; ?>
 
-            <!-- Sidebar: How It Works -->
-            <div class="kpg-info-card kpg-card">
-                <div class="kpg-card-header">
-                    <h2 class="kpg-card-title">How It Works</h2>
-                </div>
-                <div class="kpg-info-content">
-                    <ol class="kpg-info-list">
-                        <li><strong>Select your base page</strong> — the template to duplicate.</li>
-                        <li><strong>Add keyword pairs</strong> — find keyword + comma-separated replacements.</li>
-                        <li><strong>Choose mode</strong> — Matrix (every combination) or Independent (per pair).</li>
-                        <li><strong>AI rewrite (optional)</strong> — makes each page unique.</li>
-                        <li><strong>Preview then Generate</strong> — review one page first.</li>
-                    </ol>
-                    <div class="kpg-info-tip">
-                        <strong>Example:</strong> "Melbourne CBD" &rarr; "Sydney, Brisbane" &times; "Corporate Venue" &rarr; "Private Dining, Birthday Party" = 4 pages in Matrix mode.
+            </div><!-- /.kpg-main-col -->
+
+            <!-- Sidebar -->
+            <div class="kpg-sidebar-col">
+                <div class="kpg-info-card kpg-card">
+                    <div class="kpg-card-header">
+                        <h2 class="kpg-card-title">How It Works</h2>
+                    </div>
+                    <div class="kpg-info-content">
+                        <ol class="kpg-info-list">
+                            <li><strong>Select your base page</strong> — the template to duplicate.</li>
+                            <li><strong>Add keyword pairs</strong> — find keyword + comma-separated replacements.</li>
+                            <li><strong>Choose mode</strong> — Matrix (every combination) or Independent (per pair).</li>
+                            <li><strong>AI rewrite (optional)</strong> — makes each page unique.</li>
+                            <li><strong>Preview then Generate</strong> — review one page first.</li>
+                        </ol>
+                        <div class="kpg-info-tip">
+                            <strong>Example:</strong> "Melbourne CBD" &rarr; "Sydney, Brisbane" &times; "Corporate Venue" &rarr; "Private Dining, Birthday Party" = 4 pages in Matrix mode.
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            </div><!-- /.kpg-sidebar-col -->
+
+            </div><!-- /.kpg-admin-container -->
+        </div><!-- /.kpg-admin-outer -->
+    </div><!-- /.kpg-admin-wrapper -->
     <?php
 }
 

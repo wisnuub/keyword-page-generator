@@ -34,10 +34,8 @@
 .kpg-admin-header {
   position: relative;
   background: linear-gradient(120deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
-  border-radius: 0;
   overflow: hidden;
-  margin-bottom: 0;
-  padding: 32px 28px 28px;
+  padding: 22px 28px;
 }
 
 .kpg-admin-header::before {
@@ -53,60 +51,90 @@
   z-index: 1;
   max-width: 980px;
   margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kpg-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.kpg-header-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .kpg-page-title {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: #fff;
-  margin: 0 0 6px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  letter-spacing: -.3px;
-}
-
-.kpg-icon {
-  font-size: 22px;
-  line-height: 1;
+  margin: 0 0 3px;
+  letter-spacing: -.2px;
 }
 
 .kpg-page-subtitle {
-  font-size: 13px;
-  color: rgba(255,255,255,.65);
+  font-size: 12px;
+  color: rgba(255,255,255,.6);
   margin: 0;
 }
 
-/* ── Main Container ──────────────────────── */
-.kpg-admin-container {
+.kpg-version-badge {
+  background: var(--kpg-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  letter-spacing: .3px;
+}
+
+/* ── Outer wrapper (below banner) ────────── */
+.kpg-admin-outer {
   max-width: 980px;
-  margin: 24px auto 40px;
-  padding: 0 28px;
-  display: grid;
-  grid-template-columns: 1fr 280px;
-  grid-template-rows: auto;
+  margin: 0 auto;
+  padding: 20px 28px 40px;
+}
+
+/* ── Two-column layout ───────────────────── */
+.kpg-admin-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.kpg-main-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   gap: 20px;
 }
 
-/* Full-width items span both columns */
-.kpg-admin-container .kpg-job-status-card,
-.kpg-admin-container .kpg-preview-card {
-  grid-column: 1 / -1;
-}
-
-/* Main form takes left column */
-.kpg-admin-container .kpg-form-card {
-  grid-column: 1;
-}
-
-/* Sidebar takes right column */
-.kpg-admin-container .kpg-info-card {
-  grid-column: 2;
-  grid-row: 2 / span 3;
-  align-self: start;
+.kpg-sidebar-col {
+  width: 260px;
+  flex-shrink: 0;
   position: sticky;
   top: 32px;
-  margin-top: 0;
+}
+
+/* Settings page uses single column */
+.kpg-admin-container--settings {
+  display: block;
+  max-width: 640px;
+}
+
+/* ── Settings single-column ─────────────── */
+.kpg-admin-container--settings {
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 /* ── Card ────────────────────────────────── */
@@ -889,12 +917,6 @@
   font-weight: 700;
 }
 
-/* ── Settings page uses single column ────── */
-.kpg-admin-container--settings {
-  grid-template-columns: 1fr;
-  max-width: 640px;
-}
-
 /* ── WordPress Notices ───────────────────── */
 .kpg-admin-wrapper .notice {
   margin: 14px 0;
@@ -952,25 +974,31 @@
 
 /* ── Responsive ──────────────────────────── */
 @media (max-width: 900px) {
+  .kpg-admin-outer {
+    padding: 16px 16px 32px;
+  }
+
   .kpg-admin-container {
-    grid-template-columns: 1fr;
-    padding: 0 16px;
+    flex-direction: column;
   }
 
-  .kpg-admin-container .kpg-info-card {
-    grid-column: 1;
-    grid-row: auto;
+  .kpg-sidebar-col {
+    width: 100%;
     position: static;
-  }
-
-  .kpg-admin-container .kpg-form-card {
-    grid-column: 1;
   }
 }
 
 @media (max-width: 600px) {
   .kpg-admin-header {
-    padding: 20px 16px;
+    padding: 16px;
+  }
+
+  .kpg-header-brand {
+    gap: 10px;
+  }
+
+  .kpg-header-icon {
+    font-size: 24px;
   }
 
   .kpg-form {

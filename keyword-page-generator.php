@@ -22,6 +22,7 @@ add_action('admin_enqueue_scripts', 'kpg_enqueue_admin_assets');
 add_action('wp_ajax_kpg_start_batch', 'kpg_ajax_start_batch');
 add_action('wp_ajax_kpg_process_step', 'kpg_ajax_process_step');
 add_action('wp_ajax_kpg_cancel_batch', 'kpg_ajax_cancel_batch');
+add_action('wp_ajax_kpg_get_templates', 'kpg_ajax_get_templates');
 
 // WP-Cron scheduled generation
 add_action('kpg_cron_process_job', 'kpg_cron_process_single_step');
@@ -46,13 +47,14 @@ function kpg_add_admin_menu() {
         'dashicons-admin-page',
         25
     );
+    // Keep submenu entry so the menu item label matches (WP adds it automatically otherwise)
     add_submenu_page(
         'keyword-page-generator',
-        'AI Settings',
-        'AI Settings',
+        'Keyword Page Generator',
+        'Page Generator',
         'manage_options',
-        'kpg-ai-settings',
-        'kpg_ai_settings_page'
+        'keyword-page-generator',
+        'kpg_admin_page'
     );
 }
 
@@ -62,13 +64,13 @@ function kpg_enqueue_admin_assets() {
 
     $allowed_screens = [
         'toplevel_page_keyword-page-generator',
-        'page-generator_page_kpg-ai-settings',
+        'page-generator_page_keyword-page-generator',
     ];
 
     if (!in_array($current_screen->id, $allowed_screens, true)) return;
 
-    wp_enqueue_style('kpg-admin-styles', plugins_url('assets/kpg-admin-styles.css', __FILE__), [], '2.2');
-    wp_enqueue_script('kpg-admin-script', plugins_url('assets/kpg-admin-script.js', __FILE__), ['jquery'], '2.2', true);
+    wp_enqueue_style('kpg-admin-styles', plugins_url('assets/kpg-admin-styles.css', __FILE__), [], '2.3');
+    wp_enqueue_script('kpg-admin-script', plugins_url('assets/kpg-admin-script.js', __FILE__), ['jquery'], '2.3', true);
 
     $ai_settings = kpg_get_ai_settings();
     wp_localize_script('kpg-admin-script', 'kpgData', [
@@ -138,110 +140,8 @@ function kpg_decrypt($value) {
     return $decrypted !== false ? $decrypted : '';
 }
 
-function kpg_ai_settings_page() {
-    if (!current_user_can('manage_options')) wp_die(__('Unauthorized'));
-
-    $settings = kpg_get_ai_settings();
-    $builders = kpg_detect_active_builders();
-    $has_key  = !empty($settings['api_key']);
-    $masked_key = $has_key ? '••••••••' . substr(kpg_decrypt($settings['api_key']), -4) : '';
-
-    $default_models = [
-        'openai'    => ['gpt-4o-mini' => 'GPT-4o Mini (cheap)', 'gpt-4o' => 'GPT-4o (better)'],
-        'anthropic' => ['claude-sonnet-4-6' => 'Claude Sonnet 4.6 (cheap)', 'claude-opus-4-6' => 'Claude Opus 4.6 (better)'],
-    ];
-    ?>
-    <div class="kpg-admin-wrapper">
-        <div class="kpg-admin-header">
-            <div class="kpg-header-content">
-                <div class="kpg-header-brand">
-                    <span class="kpg-header-icon">&#9881;</span>
-                    <div>
-                        <h1 class="kpg-page-title">AI Settings</h1>
-                        <p class="kpg-page-subtitle">Configure AI content rewriting for unique page generation</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="kpg-admin-outer">
-        <div class="kpg-admin-container--settings">
-            <div class="kpg-card">
-                <div class="kpg-card-header">
-                    <h2 class="kpg-card-title">AI Provider Configuration</h2>
-                </div>
-                <form method="post" action="options.php" class="kpg-form">
-                    <?php settings_fields('kpg_ai_settings_group'); ?>
-
-                    <div class="kpg-form-section">
-                        <div class="kpg-form-field">
-                            <label for="kpg_provider" class="kpg-label">AI Provider</label>
-                            <select id="kpg_provider" name="kpg_ai_settings[provider]" class="kpg-select">
-                                <option value="openai" <?php selected($settings['provider'], 'openai'); ?>>OpenAI</option>
-                                <option value="anthropic" <?php selected($settings['provider'], 'anthropic'); ?>>Anthropic (Claude)</option>
-                            </select>
-                        </div>
-
-                        <div class="kpg-form-field">
-                            <label for="kpg_api_key" class="kpg-label">API Key</label>
-                            <input type="password" id="kpg_api_key" name="kpg_ai_settings[api_key]"
-                                   class="kpg-input" value="<?php echo esc_attr($masked_key); ?>"
-                                   placeholder="Enter your API key" autocomplete="off">
-                            <p class="kpg-field-help">Your key is stored encrypted. Leave unchanged to keep the existing key.</p>
-                        </div>
-
-                        <div class="kpg-form-field">
-                            <label for="kpg_model" class="kpg-label">Model</label>
-                            <select id="kpg_model" name="kpg_ai_settings[model]" class="kpg-select">
-                                <?php foreach ($default_models as $provider => $models) :
-                                    foreach ($models as $model_id => $model_name) : ?>
-                                        <option value="<?php echo esc_attr($model_id); ?>"
-                                                data-provider="<?php echo esc_attr($provider); ?>"
-                                                <?php selected($settings['model'], $model_id); ?>>
-                                            <?php echo esc_html($model_name); ?>
-                                        </option>
-                                    <?php endforeach;
-                                endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div class="kpg-form-field">
-                            <label for="kpg_custom_prompt" class="kpg-label">Custom Prompt (optional)</label>
-                            <textarea id="kpg_custom_prompt" name="kpg_ai_settings[custom_prompt]"
-                                      class="kpg-input kpg-textarea" rows="4"
-                                      placeholder="Leave empty to use the default prompt. Use {keywords} and {blocks} placeholders."><?php echo esc_textarea($settings['custom_prompt']); ?></textarea>
-                        </div>
-                    </div>
-
-                    <?php submit_button('Save AI Settings', 'primary kpg-btn kpg-btn-primary'); ?>
-                </form>
-            </div>
-
-            <!-- Detected Builders Card -->
-            <div class="kpg-card">
-                <div class="kpg-card-header">
-                    <h2 class="kpg-card-title">Detected Page Builders</h2>
-                    <p class="kpg-card-description">Builders found on your WordPress installation</p>
-                </div>
-                <div class="kpg-form">
-                    <ul class="kpg-builder-list">
-                        <?php
-                        $all_builders = ['elementor' => 'Elementor', 'divi' => 'Divi', 'wpbakery' => 'WPBakery', 'gutenberg' => 'Gutenberg', 'classic' => 'Classic Editor'];
-                        foreach ($all_builders as $key => $name) :
-                            $active = in_array($key, $builders, true);
-                        ?>
-                            <li class="kpg-builder-item <?php echo $active ? 'kpg-builder-active' : 'kpg-builder-inactive'; ?>">
-                                <span class="kpg-builder-badge"><?php echo $active ? '&#10003;' : '&#10007;'; ?></span>
-                                <?php echo esc_html($name); ?>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-            </div>
-        </div><!-- /.kpg-admin-container--settings -->
-        </div><!-- /.kpg-admin-outer -->
-    </div><!-- /.kpg-admin-wrapper -->
-    <?php
-}
+// kpg_ai_settings_page kept for backwards-compat in case any bookmark links to the old URL
+// It simply redirects to the main page with the AI tab active
 
 // ============================================================
 // Builder Detection
@@ -301,6 +201,25 @@ function kpg_admin_page() {
     $preview_results  = [];
     $ai_settings      = kpg_get_ai_settings();
     $ai_configured    = !empty($ai_settings['api_key']);
+    $builders         = kpg_detect_active_builders();
+    $has_key          = !empty($ai_settings['api_key']);
+    $masked_key       = $has_key ? '••••••••' . substr(kpg_decrypt($ai_settings['api_key']), -4) : '';
+    $default_models   = [
+        'openai'    => ['gpt-4o-mini' => 'GPT-4o Mini (fast)', 'gpt-4o' => 'GPT-4o (best)'],
+        'anthropic' => ['claude-sonnet-4-6' => 'Claude Sonnet 4.6 (fast)', 'claude-opus-4-6' => 'Claude Opus 4.6 (best)'],
+    ];
+    $all_builders     = ['elementor' => 'Elementor', 'divi' => 'Divi', 'wpbakery' => 'WPBakery', 'gutenberg' => 'Gutenberg', 'classic' => 'Classic Editor'];
+
+    // Handle AI settings save (posted to this page via AJAX-style inline form)
+    if (isset($_POST['kpg_save_ai'])) {
+        check_admin_referer('kpg_ai_save', 'kpg_ai_nonce');
+        $input = $_POST['kpg_ai_settings'] ?? [];
+        update_option('kpg_ai_settings', kpg_sanitize_ai_settings($input));
+        $ai_settings   = kpg_get_ai_settings();
+        $ai_configured = !empty($ai_settings['api_key']);
+        $has_key       = $ai_configured;
+        $masked_key    = $has_key ? '••••••••' . substr(kpg_decrypt($ai_settings['api_key']), -4) : '';
+    }
 
     if (isset($_POST['kpg_preview']) || isset($_POST['kpg_submit'])) {
         check_admin_referer('kpg_generate_action', 'kpg_nonce');
@@ -322,6 +241,7 @@ function kpg_admin_page() {
     ]);
     ?>
     <div class="kpg-admin-wrapper">
+        <div class="kpg-admin-header-wrap">
         <div class="kpg-admin-header">
             <div class="kpg-header-content">
                 <div class="kpg-header-brand">
@@ -334,8 +254,25 @@ function kpg_admin_page() {
                 <span class="kpg-version-badge">v2.2</span>
             </div>
         </div>
+        </div><!-- /.kpg-admin-header-wrap -->
 
         <div class="kpg-admin-outer">
+
+            <!-- Tab navigation -->
+            <nav class="kpg-tabs-nav" role="tablist">
+                <button class="kpg-tab-btn" data-tab="generate" role="tab" aria-selected="true">
+                    &#9889; Generate
+                </button>
+                <button class="kpg-tab-btn" data-tab="ai" role="tab" aria-selected="false">
+                    &#129302; AI Settings<?php if (!$ai_configured) echo ' <span class="kpg-tab-badge">!</span>'; ?>
+                </button>
+                <button class="kpg-tab-btn" data-tab="builders" role="tab" aria-selected="false">
+                    &#128268; Page Builders
+                </button>
+            </nav>
+
+            <!-- ===================== TAB: Generate ===================== -->
+            <div class="kpg-tab-panel" id="kpg-panel-generate">
             <?php
             $cron_job = get_option('kpg_cron_job');
             if ($cron_job) :
@@ -495,8 +432,7 @@ function kpg_admin_page() {
                         </div>
                     </div>
 
-                    <!-- Step 4: AI Rewrite (shown when AI is configured) -->
-                    <?php if ($ai_configured) : ?>
+                    <!-- Step 4: AI Content Rewriting -->
                     <div class="kpg-form-section" id="kpg-ai-section">
                         <div class="kpg-section-header">
                             <h3 class="kpg-section-title">
@@ -504,6 +440,11 @@ function kpg_admin_page() {
                                 AI Content Rewriting
                             </h3>
                         </div>
+                        <?php if (!$ai_configured) : ?>
+                        <div class="kpg-ai-notice">
+                            &#128272; No API key configured. <a href="#" class="kpg-tab-link" data-tab="ai">Set up AI Settings</a> to enable unique content rewriting per page.
+                        </div>
+                        <?php else : ?>
                         <label class="kpg-toggle-label">
                             <input type="checkbox" name="ai_rewrite" value="1" id="kpg-ai-toggle"
                                 <?php checked(!empty($_POST['ai_rewrite'])); ?>>
@@ -511,17 +452,36 @@ function kpg_admin_page() {
                         </label>
                         <div class="kpg-ai-options" id="kpg-ai-options" style="display:none;">
                             <div class="kpg-form-field">
+                                <label class="kpg-label">Rewrite Scope</label>
+                                <div class="kpg-mode-options kpg-mode-options--compact">
+                                    <label class="kpg-mode-option">
+                                        <input type="radio" name="ai_scope" value="widget" <?php checked(($_POST['ai_scope'] ?? 'widget'), 'widget'); ?>>
+                                        <span class="kpg-mode-label">
+                                            <strong>Widget / Block</strong>
+                                            <span class="kpg-mode-desc">Each text element rewritten separately</span>
+                                        </span>
+                                    </label>
+                                    <label class="kpg-mode-option">
+                                        <input type="radio" name="ai_scope" value="section" <?php checked(($_POST['ai_scope'] ?? 'widget'), 'section'); ?>>
+                                        <span class="kpg-mode-label">
+                                            <strong>Section / Row</strong>
+                                            <span class="kpg-mode-desc">All text in a section rewritten together (Elementor)</span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="kpg-form-field">
                                 <label class="kpg-label">Custom AI Prompt (optional)</label>
                                 <textarea name="ai_prompt" class="kpg-input kpg-textarea" rows="3"
                                           placeholder="Leave empty for default. Use {keywords} for the replacement values."><?php echo esc_textarea($_POST['ai_prompt'] ?? ''); ?></textarea>
                             </div>
                             <div class="kpg-info-tip">
-                                AI will rewrite text content to be unique for each page while preserving your page builder layout and structure.
+                                AI will rewrite text content to be unique for each page while preserving your page builder layout.
                                 Using: <strong><?php echo esc_html(ucfirst($ai_settings['provider'])); ?></strong>
                             </div>
                         </div>
+                        <?php endif; ?>
                     </div>
-                    <?php endif; ?>
 
                     <!-- Page Counter & Actions -->
                     <div class="kpg-form-actions">
@@ -646,8 +606,110 @@ function kpg_admin_page() {
                     </div>
                 </div>
             </div><!-- /.kpg-sidebar-col -->
-
             </div><!-- /.kpg-admin-container -->
+            </div><!-- /.kpg-tab-panel#generate -->
+
+            <!-- ===================== TAB: AI Settings ===================== -->
+            <div class="kpg-tab-panel" id="kpg-panel-ai" style="display:none;">
+                <div class="kpg-admin-container--settings">
+                    <?php if (isset($_POST['kpg_save_ai'])) : ?>
+                    <div class="notice notice-success" style="margin-bottom:16px;"><p>AI settings saved.</p></div>
+                    <?php endif; ?>
+                    <div class="kpg-card">
+                        <div class="kpg-card-header">
+                            <h2 class="kpg-card-title">AI Provider Configuration</h2>
+                            <p class="kpg-card-description">Configure the AI model used for unique content rewriting</p>
+                        </div>
+                        <form method="post" class="kpg-form">
+                            <?php wp_nonce_field('kpg_ai_save', 'kpg_ai_nonce'); ?>
+                            <input type="hidden" name="kpg_save_ai" value="1">
+
+                            <div class="kpg-form-section">
+                                <div class="kpg-form-field">
+                                    <label for="kpg_provider" class="kpg-label">AI Provider</label>
+                                    <select id="kpg_provider" name="kpg_ai_settings[provider]" class="kpg-select">
+                                        <option value="openai" <?php selected($ai_settings['provider'], 'openai'); ?>>OpenAI</option>
+                                        <option value="anthropic" <?php selected($ai_settings['provider'], 'anthropic'); ?>>Anthropic (Claude)</option>
+                                    </select>
+                                </div>
+
+                                <div class="kpg-form-field">
+                                    <label for="kpg_api_key" class="kpg-label">API Key</label>
+                                    <input type="password" id="kpg_api_key" name="kpg_ai_settings[api_key]"
+                                           class="kpg-input" value="<?php echo esc_attr($masked_key); ?>"
+                                           placeholder="Enter your API key" autocomplete="off">
+                                    <p class="kpg-field-help">Stored encrypted. Leave unchanged to keep existing key.</p>
+                                </div>
+
+                                <div class="kpg-form-field">
+                                    <label for="kpg_model" class="kpg-label">Model</label>
+                                    <select id="kpg_model" name="kpg_ai_settings[model]" class="kpg-select">
+                                        <?php foreach ($default_models as $provider => $models) :
+                                            foreach ($models as $model_id => $model_name) : ?>
+                                                <option value="<?php echo esc_attr($model_id); ?>"
+                                                        data-provider="<?php echo esc_attr($provider); ?>"
+                                                        <?php selected($ai_settings['model'], $model_id); ?>>
+                                                    <?php echo esc_html($model_name); ?>
+                                                </option>
+                                            <?php endforeach;
+                                        endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <div class="kpg-form-field">
+                                    <label for="kpg_custom_prompt" class="kpg-label">Default Prompt (optional)</label>
+                                    <textarea id="kpg_custom_prompt" name="kpg_ai_settings[custom_prompt]"
+                                              class="kpg-input kpg-textarea" rows="4"
+                                              placeholder="Leave empty for built-in prompt. Use {keywords} and {blocks} as placeholders."><?php echo esc_textarea($ai_settings['custom_prompt']); ?></textarea>
+                                    <p class="kpg-field-help">This is the default prompt for all generations. You can override it per-generation in the Generate tab.</p>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="kpg-btn kpg-btn-primary">Save AI Settings</button>
+                        </form>
+                    </div>
+                </div>
+            </div><!-- /.kpg-tab-panel#ai -->
+
+            <!-- ===================== TAB: Page Builders ===================== -->
+            <div class="kpg-tab-panel" id="kpg-panel-builders" style="display:none;">
+                <div class="kpg-admin-container--settings">
+                    <div class="kpg-card">
+                        <div class="kpg-card-header">
+                            <h2 class="kpg-card-title">Detected Page Builders</h2>
+                            <p class="kpg-card-description">Page builders detected on your WordPress installation. The plugin automatically copies the correct metadata for each builder.</p>
+                        </div>
+                        <div class="kpg-form">
+                            <ul class="kpg-builder-list kpg-builder-list--full">
+                                <?php foreach ($all_builders as $key => $name) :
+                                    $active = in_array($key, $builders, true);
+                                    $desc = [
+                                        'elementor' => 'Copies _elementor_data JSON with keyword replacements. AI rewrites at widget or section level.',
+                                        'divi'      => 'Replaces text inside [et_pb_text] and [et_pb_blurb] shortcodes.',
+                                        'wpbakery'  => 'Replaces text inside [vc_column_text] shortcodes.',
+                                        'gutenberg' => 'Parses and replaces core/paragraph, core/heading, core/list, core/quote blocks.',
+                                        'classic'   => 'Standard HTML content replacement.',
+                                    ];
+                                ?>
+                                <li class="kpg-builder-item kpg-builder-item--full <?php echo $active ? 'kpg-builder-active' : 'kpg-builder-inactive'; ?>">
+                                    <div class="kpg-builder-status">
+                                        <span class="kpg-builder-badge"><?php echo $active ? '&#10003;' : '&#10007;'; ?></span>
+                                    </div>
+                                    <div class="kpg-builder-info">
+                                        <strong><?php echo esc_html($name); ?></strong>
+                                        <span class="kpg-builder-desc"><?php echo esc_html($desc[$key] ?? ''); ?></span>
+                                    </div>
+                                    <span class="kpg-builder-pill <?php echo $active ? 'kpg-pill-active' : 'kpg-pill-inactive'; ?>">
+                                        <?php echo $active ? 'Active' : 'Not detected'; ?>
+                                    </span>
+                                </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /.kpg-tab-panel#builders -->
+
         </div><!-- /.kpg-admin-outer -->
     </div><!-- /.kpg-admin-wrapper -->
     <?php
@@ -923,7 +985,7 @@ function kpg_generate_preview() {
  * Create a single page from a replacement spec.
  * Used by both synchronous form processing and AJAX batch processing.
  */
-function kpg_create_single_page($base_page, $spec, $post_type, $builder, $ai_enabled, $ai_settings, $ai_prompt) {
+function kpg_create_single_page($base_page, $spec, $post_type, $builder, $ai_enabled, $ai_settings, $ai_prompt, $ai_scope = 'widget') {
     $new_title   = kpg_replace_title($base_page->post_title, $spec);
     $new_slug    = kpg_replace_slug($base_page->post_name, $spec);
     $new_content = kpg_replace_content($base_page->post_content, $spec);
@@ -958,7 +1020,7 @@ function kpg_create_single_page($base_page, $spec, $post_type, $builder, $ai_ena
 
         // AI rewrite for Elementor meta if applicable
         if ($ai_enabled && $builder === 'elementor' && $ai_settings && !empty($ai_settings['api_key'])) {
-            kpg_ai_rewrite_elementor_meta($new_page_id, $spec, $ai_settings, $ai_prompt);
+            kpg_ai_rewrite_elementor_meta($new_page_id, $spec, $ai_settings, $ai_prompt, $ai_scope);
         }
 
         return ['status' => 'created', 'title' => $new_title, 'post_id' => $new_page_id, 'warning' => $warning];
@@ -1234,31 +1296,60 @@ function kpg_call_anthropic($prompt, $api_key, $model) {
     return ['success' => false, 'error' => $error];
 }
 
-function kpg_ai_rewrite_elementor_meta($post_id, $replacements, $ai_settings, $custom_prompt = '') {
+function kpg_ai_rewrite_elementor_meta($post_id, $replacements, $ai_settings, $custom_prompt = '', $scope = 'widget') {
     $data = get_post_meta($post_id, '_elementor_data', true);
     if (empty($data)) return;
 
     $decoded = is_string($data) ? json_decode($data, true) : $data;
     if (!is_array($decoded)) return;
 
-    // Extract text from Elementor widgets
-    $texts = [];
-    kpg_elementor_walk_widgets($decoded, $texts, 'extract');
-
-    if (empty($texts)) return;
-
     $keywords = array_map(fn($r) => $r['new'], $replacements);
-    $prompt = kpg_build_ai_prompt(
-        array_map(fn($t) => ['text' => $t], $texts),
-        $keywords,
-        $custom_prompt ?: ($ai_settings['custom_prompt'] ?? '')
-    );
+    $prompt_template = $custom_prompt ?: ($ai_settings['custom_prompt'] ?? '');
 
-    $response = kpg_call_ai_api($prompt, $ai_settings);
-    if (!$response['success']) return;
+    if ($scope === 'section') {
+        // Section scope: one API call per top-level section, all widgets in section together
+        foreach ($decoded as &$section) {
+            if (($section['elType'] ?? '') !== 'section') continue;
 
-    $rewritten = array_map('trim', explode('---BLOCK---', $response['text']));
-    kpg_elementor_walk_widgets($decoded, $rewritten, 'replace');
+            $texts = [];
+            $idx   = 0;
+            kpg_elementor_walk_widgets($section['elements'] ?? [], $texts, 'extract', $idx);
+            if (empty($texts)) continue;
+
+            $prompt = kpg_build_ai_prompt(
+                array_map(fn($t) => ['text' => $t], $texts),
+                $keywords,
+                $prompt_template
+            );
+
+            $response = kpg_call_ai_api($prompt, $ai_settings);
+            if (!$response['success']) continue;
+
+            $rewritten = array_map('trim', explode('---BLOCK---', $response['text']));
+            $idx = 0;
+            kpg_elementor_walk_widgets($section['elements'] ?? [], $rewritten, 'replace', $idx);
+            sleep(1); // Rate limiting between sections
+        }
+    } else {
+        // Widget scope (default): all widgets across the page in one call
+        $texts = [];
+        $idx   = 0;
+        kpg_elementor_walk_widgets($decoded, $texts, 'extract', $idx);
+        if (empty($texts)) return;
+
+        $prompt = kpg_build_ai_prompt(
+            array_map(fn($t) => ['text' => $t], $texts),
+            $keywords,
+            $prompt_template
+        );
+
+        $response = kpg_call_ai_api($prompt, $ai_settings);
+        if (!$response['success']) return;
+
+        $rewritten = array_map('trim', explode('---BLOCK---', $response['text']));
+        $idx = 0;
+        kpg_elementor_walk_widgets($decoded, $rewritten, 'replace', $idx);
+    }
 
     update_post_meta($post_id, '_elementor_data', wp_slash(wp_json_encode($decoded)));
 }
@@ -1382,6 +1473,31 @@ function kpg_elementor_meta_normalizer_run_once() {
 }
 
 // ============================================================
+// AJAX: Get Templates by Post Type
+// ============================================================
+
+function kpg_ajax_get_templates() {
+    check_ajax_referer('kpg_admin_nonce', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+    $post_type = in_array($_POST['post_type'] ?? 'page', ['page', 'post'], true) ? $_POST['post_type'] : 'page';
+    $posts = get_posts([
+        'post_type'      => $post_type,
+        'post_status'    => 'publish',
+        'posts_per_page' => 200,
+        'orderby'        => 'title',
+        'order'          => 'ASC',
+    ]);
+
+    $options = '<option value="">Select a template...</option>';
+    foreach ($posts as $p) {
+        $options .= '<option value="' . esc_attr($p->ID) . '">' . esc_html($p->post_title) . '</option>';
+    }
+
+    wp_send_json_success(['options' => $options]);
+}
+
+// ============================================================
 // AJAX Batch Processing
 // ============================================================
 
@@ -1396,6 +1512,7 @@ function kpg_ajax_start_batch() {
     $post_type    = in_array($_POST['post_type'] ?? 'page', ['page', 'post'], true) ? $_POST['post_type'] : 'page';
     $ai_enabled   = !empty($_POST['ai_rewrite']);
     $ai_prompt    = sanitize_textarea_field($_POST['ai_prompt'] ?? '');
+    $ai_scope     = in_array($_POST['ai_scope'] ?? 'widget', ['widget', 'section'], true) ? $_POST['ai_scope'] : 'widget';
 
     if (!$base_page || empty($pairs)) {
         wp_send_json_error('Invalid base page or keyword pairs.');
@@ -1421,6 +1538,7 @@ function kpg_ajax_start_batch() {
         'ai_enabled'   => $ai_enabled,
         'ai_settings'  => $ai_settings,
         'ai_prompt'    => $ai_prompt,
+        'ai_scope'     => $ai_scope,
         'total'        => count($page_specs),
         'completed'    => 0,
         'results'      => [],
@@ -1458,7 +1576,7 @@ function kpg_ajax_process_step() {
     $spec   = $job['page_specs'][$step];
     $result = kpg_create_single_page(
         $base_page, $spec, $job['post_type'], $job['builder'],
-        $job['ai_enabled'], $job['ai_settings'], $job['ai_prompt']
+        $job['ai_enabled'], $job['ai_settings'], $job['ai_prompt'], $job['ai_scope'] ?? 'widget'
     );
 
     $job['results'][]  = $result;
@@ -1620,7 +1738,7 @@ function kpg_cron_process_single_step() {
     $spec   = $job['page_specs'][$step];
     $result = kpg_create_single_page(
         $base_page, $spec, $job['post_type'], $job['builder'],
-        $job['ai_enabled'], $job['ai_settings'], $job['ai_prompt']
+        $job['ai_enabled'], $job['ai_settings'], $job['ai_prompt'], $job['ai_scope'] ?? 'widget'
     );
 
     $job['results'][] = $result;

@@ -30,12 +30,19 @@
   margin-right: 20px;
 }
 
+/* ── Banner wrap (provides max-width + margin) ── */
+.kpg-admin-header-wrap {
+  padding: 16px 28px 0;
+  max-width: calc(980px + 56px);
+}
+
 /* ── Banner ──────────────────────────────── */
 .kpg-admin-header {
   position: relative;
   background: linear-gradient(120deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
   overflow: hidden;
   padding: 22px 28px;
+  border-radius: 12px;
 }
 
 .kpg-admin-header::before {
@@ -49,8 +56,6 @@
 .kpg-header-content {
   position: relative;
   z-index: 1;
-  max-width: 980px;
-  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -96,9 +101,8 @@
 
 /* ── Outer wrapper (below banner) ────────── */
 .kpg-admin-outer {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 20px 28px 40px;
+  max-width: calc(980px + 56px);
+  padding: 16px 28px 40px;
 }
 
 /* ── Two-column layout ───────────────────── */
@@ -972,6 +976,155 @@
   }
 }
 
+/* ── Tab Navigation ──────────────────────── */
+.kpg-tabs-nav {
+  display: flex;
+  gap: 2px;
+  border-bottom: 2px solid var(--kpg-border);
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+.kpg-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--kpg-muted);
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kpg-tab-btn:hover {
+  color: var(--kpg-text);
+}
+
+.kpg-tab-btn.active {
+  color: var(--kpg-accent);
+  border-bottom-color: var(--kpg-accent);
+}
+
+.kpg-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: var(--kpg-warn);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── AI Notice (no key configured) ──────── */
+.kpg-ai-notice {
+  padding: 10px 14px;
+  background: rgba(219,166,23,.09);
+  border: 1px solid rgba(219,166,23,.3);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6b5000;
+}
+
+.kpg-ai-notice a {
+  color: var(--kpg-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.kpg-ai-notice a:hover {
+  text-decoration: underline;
+}
+
+/* ── Compact mode options (for AI scope) ─── */
+.kpg-mode-options--compact .kpg-mode-option {
+  padding: 8px 12px;
+}
+
+/* ── Builder list full-width (Builders tab) ─ */
+.kpg-builder-list--full {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.kpg-builder-item--full {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--kpg-border);
+}
+
+.kpg-builder-item--full:last-child {
+  border-bottom: none;
+}
+
+.kpg-builder-status {
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.kpg-builder-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpg-builder-info strong {
+  font-size: 13px;
+  color: var(--kpg-text);
+}
+
+.kpg-builder-desc {
+  font-size: 12px;
+  color: var(--kpg-muted);
+}
+
+.kpg-builder-pill {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.kpg-pill-active {
+  background: rgba(0,163,42,.1);
+  color: #065910;
+}
+
+.kpg-pill-inactive {
+  background: var(--kpg-bg);
+  color: var(--kpg-muted);
+  border: 1px solid var(--kpg-border);
+}
+
+.kpg-tab-link {
+  color: var(--kpg-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.kpg-tab-link:hover { text-decoration: underline; }
+
 /* ── Responsive ──────────────────────────── */
 @media (max-width: 900px) {
   .kpg-admin-outer {
@@ -989,8 +1142,13 @@
 }
 
 @media (max-width: 600px) {
+  .kpg-admin-header-wrap {
+    padding: 10px 12px 0;
+  }
+
   .kpg-admin-header {
     padding: 16px;
+    border-radius: 8px;
   }
 
   .kpg-header-brand {
@@ -999,6 +1157,15 @@
 
   .kpg-header-icon {
     font-size: 24px;
+  }
+
+  .kpg-tabs-nav {
+    overflow-x: auto;
+  }
+
+  .kpg-tab-btn {
+    padding: 8px 12px;
+    font-size: 12px;
   }
 
   .kpg-form {

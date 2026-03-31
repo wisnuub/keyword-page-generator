@@ -645,39 +645,116 @@
         }
     };
 
+    // ============================================================
+    // Tab Navigation
+    // ============================================================
+
+    var KPGTabs = {
+        init: function() {
+            var self = this;
+            var $btns = $('.kpg-tab-btn');
+            if (!$btns.length) return;
+
+            $btns.on('click', function() {
+                self.activate($(this).data('tab'));
+            });
+
+            // Tab links inside content (e.g. "Set up AI Settings")
+            $(document).on('click', '.kpg-tab-link', function(e) {
+                e.preventDefault();
+                self.activate($(this).data('tab'));
+            });
+
+            // Restore from sessionStorage
+            var saved = sessionStorage.getItem('kpg_active_tab');
+            // Also check if AI settings were just saved (query param)
+            if (window.location.search.indexOf('kpg_ai_saved') !== -1) {
+                saved = 'ai';
+            }
+            if (saved && $('.kpg-tab-btn[data-tab="' + saved + '"]').length) {
+                self.activate(saved);
+            } else {
+                self.activate('generate');
+            }
+        },
+
+        activate: function(tab) {
+            $('.kpg-tab-btn').removeClass('active').attr('aria-selected', 'false');
+            $('.kpg-tab-btn[data-tab="' + tab + '"]').addClass('active').attr('aria-selected', 'true');
+            $('.kpg-tab-panel').hide();
+            $('#kpg-panel-' + tab).show();
+            sessionStorage.setItem('kpg_active_tab', tab);
+
+            // Filter models when AI tab becomes visible
+            if (tab === 'ai') {
+                KPGTabs.filterModels();
+            }
+        },
+
+        filterModels: function() {
+            var $provider = $('#kpg_provider');
+            var $model    = $('#kpg_model');
+            if (!$provider.length || !$model.length) return;
+            var selected  = $provider.val();
+            var firstVisible = null;
+            $model.find('option').each(function() {
+                var optProvider = $(this).data('provider');
+                if (optProvider && optProvider !== selected) {
+                    $(this).hide();
+                    if ($(this).is(':selected')) $(this).prop('selected', false);
+                } else {
+                    $(this).show();
+                    if (!firstVisible) firstVisible = $(this);
+                }
+            });
+            if (!$model.find('option:selected:visible').length && firstVisible) {
+                firstVisible.prop('selected', true);
+            }
+        }
+    };
+
+    // ============================================================
+    // Post Type → Template Dropdown (AJAX)
+    // ============================================================
+
+    function kpgInitPostTypeSwitch() {
+        var $postType = $('#kpg_post_type');
+        var $template = $('#kpg_field_base_page');
+        if (!$postType.length || !$template.length) return;
+
+        $postType.on('change', function() {
+            var type = $(this).val();
+            $template.prop('disabled', true).html('<option>Loading...</option>');
+            $.ajax({
+                url: kpg.ajaxUrl,
+                type: 'POST',
+                data: { action: 'kpg_get_templates', nonce: kpg.nonce, post_type: type },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        $template.html(res.data.options).prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    $template.prop('disabled', false).html('<option value="">Error loading templates</option>');
+                }
+            });
+        });
+    }
+
     // Initialize
     $(document).ready(function() {
         KPG.init();
+        KPGTabs.init();
+        kpgInitPostTypeSwitch();
 
         // Preview card animation
         $('.kpg-preview-card').fadeIn(500);
 
-        // Model dropdown filtering based on provider (AI settings page)
-        var $provider = $('#kpg_provider');
-        var $model = $('#kpg_model');
-        if ($provider.length && $model.length) {
-            function filterModels() {
-                var selected = $provider.val();
-                var firstVisible = null;
-                $model.find('option').each(function() {
-                    var optProvider = $(this).data('provider');
-                    if (optProvider && optProvider !== selected) {
-                        $(this).hide();
-                        if ($(this).is(':selected')) {
-                            $(this).prop('selected', false);
-                        }
-                    } else {
-                        $(this).show();
-                        if (!firstVisible) firstVisible = $(this);
-                    }
-                });
-                if (!$model.find('option:selected:visible').length && firstVisible) {
-                    firstVisible.prop('selected', true);
-                }
-            }
-            $provider.on('change', filterModels);
-            filterModels();
-        }
+        // Model filtering on provider change (in AI tab)
+        $('#kpg_provider').on('change', function() {
+            KPGTabs.filterModels();
+        });
     });
 
 })(jQuery);

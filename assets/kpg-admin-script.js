@@ -710,6 +710,9 @@
             if (!$model.find('option:selected:visible').length && firstVisible) {
                 firstVisible.prop('selected', true);
             }
+            // Show the matching API key link
+            $('.kpg-api-key-link').hide();
+            $('.kpg-api-key-link--' + selected).show();
         }
     };
 

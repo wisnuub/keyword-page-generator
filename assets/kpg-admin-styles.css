@@ -25,15 +25,13 @@
 
 /* ── Wrapper ─────────────────────────────── */
 .kpg-admin-wrapper {
-  background: var(--kpg-bg);
-  min-height: 100vh;
+  max-width: 980px;
   margin-right: 20px;
 }
 
-/* ── Banner wrap (provides max-width + margin) ── */
+/* ── Banner wrap ─────────────────────────── */
 .kpg-admin-header-wrap {
-  padding: 16px 28px 0;
-  max-width: calc(980px + 56px);
+  padding: 16px 0 0;
 }
 
 /* ── Banner ──────────────────────────────── */
@@ -101,8 +99,7 @@
 
 /* ── Outer wrapper (below banner) ────────── */
 .kpg-admin-outer {
-  max-width: calc(980px + 56px);
-  padding: 16px 28px 40px;
+  padding: 0 0 40px;
 }
 
 /* ── Two-column layout ───────────────────── */
@@ -1151,12 +1148,27 @@
 
 .kpg-tab-link:hover { text-decoration: underline; }
 
+/* ── API key "Get key" link (inline in label) ── */
+.kpg-api-key-link {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--kpg-accent);
+  text-decoration: none;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--kpg-accent);
+  border-radius: 20px;
+  vertical-align: middle;
+  transition: background .15s, color .15s;
+}
+
+.kpg-api-key-link:hover {
+  background: var(--kpg-accent);
+  color: #fff;
+}
+
 /* ── Responsive ──────────────────────────── */
 @media (max-width: 900px) {
-  .kpg-admin-outer {
-    padding: 16px 16px 32px;
-  }
-
   .kpg-admin-container {
     flex-direction: column;
   }

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Keyword Page Generator
  * Description: Generates keyword-specific pages by replacing multiple placeholders in content and metadata. Supports matrix generation, AI rewriting, Divi, Elementor, WPBakery, Gutenberg and Yoast SEO.
- * Version: 2.1
+ * Version: 2.3
  * Author: Wisnu
  * Author URI: https://wisnuub.github.io/
  * Based on: Suburb Page Generator by Steven Chun
@@ -69,8 +69,8 @@ function kpg_enqueue_admin_assets() {
 
     if (!in_array($current_screen->id, $allowed_screens, true)) return;
 
-    wp_enqueue_style('kpg-admin-styles', plugins_url('assets/kpg-admin-styles.css', __FILE__), [], '2.4');
-    wp_enqueue_script('kpg-admin-script', plugins_url('assets/kpg-admin-script.js', __FILE__), ['jquery'], '2.4', true);
+    wp_enqueue_style('kpg-admin-styles', plugins_url('assets/kpg-admin-styles.css', __FILE__), [], '2.3');
+    wp_enqueue_script('kpg-admin-script', plugins_url('assets/kpg-admin-script.js', __FILE__), ['jquery'], '2.3', true);
 
     $ai_settings = kpg_get_ai_settings();
     wp_localize_script('kpg-admin-script', 'kpgData', [
@@ -99,7 +99,7 @@ function kpg_register_settings() {
 
 function kpg_sanitize_ai_settings($input) {
     $clean = [];
-    $clean['provider']      = in_array($input['provider'] ?? '', ['openai', 'anthropic'], true) ? $input['provider'] : 'openai';
+    $clean['provider']      = in_array($input['provider'] ?? '', ['openai', 'anthropic', 'gemini'], true) ? $input['provider'] : 'openai';
     $clean['model']         = sanitize_text_field($input['model'] ?? '');
     $clean['custom_prompt'] = sanitize_textarea_field($input['custom_prompt'] ?? '');
 
@@ -207,6 +207,12 @@ function kpg_admin_page() {
     $default_models   = [
         'openai'    => ['gpt-4o-mini' => 'GPT-4o Mini (fast)', 'gpt-4o' => 'GPT-4o (best)'],
         'anthropic' => ['claude-sonnet-4-6' => 'Claude Sonnet 4.6 (fast)', 'claude-opus-4-6' => 'Claude Opus 4.6 (best)'],
+        'gemini'    => ['gemini-2.0-flash' => 'Gemini 2.0 Flash (fast)', 'gemini-2.5-pro-preview-03-25' => 'Gemini 2.5 Pro (best)'],
+    ];
+    $api_key_urls = [
+        'openai'    => 'https://platform.openai.com/api-keys',
+        'anthropic' => 'https://console.anthropic.com/settings/keys',
+        'gemini'    => 'https://aistudio.google.com/apikey',
     ];
     $all_builders     = ['elementor' => 'Elementor', 'divi' => 'Divi', 'wpbakery' => 'WPBakery', 'gutenberg' => 'Gutenberg', 'classic' => 'Classic Editor'];
 
@@ -650,13 +656,25 @@ function kpg_admin_page() {
                                 <div class="kpg-form-field">
                                     <label for="kpg_provider" class="kpg-label">AI Provider</label>
                                     <select id="kpg_provider" name="kpg_ai_settings[provider]" class="kpg-select">
-                                        <option value="openai" <?php selected($ai_settings['provider'], 'openai'); ?>>OpenAI</option>
+                                        <option value="openai"    <?php selected($ai_settings['provider'], 'openai'); ?>>OpenAI</option>
                                         <option value="anthropic" <?php selected($ai_settings['provider'], 'anthropic'); ?>>Anthropic (Claude)</option>
+                                        <option value="gemini"    <?php selected($ai_settings['provider'], 'gemini'); ?>>Google Gemini</option>
                                     </select>
                                 </div>
 
                                 <div class="kpg-form-field">
-                                    <label for="kpg_api_key" class="kpg-label">API Key</label>
+                                    <label for="kpg_api_key" class="kpg-label">
+                                        API Key
+                                        <?php foreach ($api_key_urls as $provider => $url) : ?>
+                                        <a href="<?php echo esc_url($url); ?>"
+                                           class="kpg-api-key-link kpg-api-key-link--<?php echo esc_attr($provider); ?>"
+                                           target="_blank" rel="noopener noreferrer"
+                                           data-provider="<?php echo esc_attr($provider); ?>"
+                                           <?php echo $ai_settings['provider'] !== $provider ? 'style="display:none;"' : ''; ?>>
+                                            Get <?php echo esc_html(['openai' => 'OpenAI', 'anthropic' => 'Anthropic', 'gemini' => 'Gemini'][$provider]); ?> key &rarr;
+                                        </a>
+                                        <?php endforeach; ?>
+                                    </label>
                                     <input type="password" id="kpg_api_key" name="kpg_ai_settings[api_key]"
                                            class="kpg-input" value="<?php echo esc_attr($masked_key); ?>"
                                            placeholder="Enter your API key" autocomplete="off">
@@ -1254,6 +1272,9 @@ function kpg_call_ai_api($prompt, $settings) {
     if ($provider === 'anthropic') {
         return kpg_call_anthropic($prompt, $api_key, $model ?: 'claude-sonnet-4-6');
     }
+    if ($provider === 'gemini') {
+        return kpg_call_gemini($prompt, $api_key, $model ?: 'gemini-2.0-flash');
+    }
     return kpg_call_openai($prompt, $api_key, $model ?: 'gpt-4o-mini');
 }
 
@@ -1315,6 +1336,29 @@ function kpg_call_anthropic($prompt, $api_key, $model) {
     }
 
     $error = $body['error']['message'] ?? 'Unknown Anthropic error';
+    return ['success' => false, 'error' => $error];
+}
+
+function kpg_call_gemini($prompt, $api_key, $model) {
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . urlencode($model) . ':generateContent?key=' . urlencode($api_key);
+    $response = wp_remote_post($url, [
+        'timeout' => 60,
+        'headers' => ['Content-Type' => 'application/json'],
+        'body'    => wp_json_encode([
+            'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+        ]),
+    ]);
+
+    if (is_wp_error($response)) {
+        return ['success' => false, 'error' => $response->get_error_message()];
+    }
+
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    if (isset($body['candidates'][0]['content']['parts'][0]['text'])) {
+        return ['success' => true, 'text' => $body['candidates'][0]['content']['parts'][0]['text']];
+    }
+
+    $error = $body['error']['message'] ?? 'Unknown Gemini error';
     return ['success' => false, 'error' => $error];
 }
 

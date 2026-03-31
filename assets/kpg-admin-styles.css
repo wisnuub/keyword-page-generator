@@ -1167,6 +1167,31 @@
   color: #fff;
 }
 
+/* ── Test API Key row ───────────────────── */
+.kpg-ai-test-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kpg-test-result {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.kpg-test-success {
+  color: #1a7f3c;
+  background: rgba(26,127,60,.08);
+}
+
+.kpg-test-error {
+  color: #c0392b;
+  background: rgba(192,57,43,.08);
+}
+
 /* ── Responsive ──────────────────────────── */
 @media (max-width: 900px) {
   .kpg-admin-container {

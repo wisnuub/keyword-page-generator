@@ -758,6 +758,44 @@
         $('#kpg_provider').on('change', function() {
             KPGTabs.filterModels();
         });
+
+        // Test API Key
+        $('#kpg-test-api-key').on('click', function() {
+            var $btn    = $(this);
+            var $result = $('#kpg-test-api-result');
+            var provider = $('#kpg_provider').val();
+            var apiKey   = $('#kpg_api_key').val();
+            var model    = $('#kpg_model').val();
+
+            $btn.prop('disabled', true).text('Testing...');
+            $result.hide().removeClass('kpg-test-success kpg-test-error');
+
+            $.ajax({
+                url: kpg.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'kpg_test_api_key',
+                    nonce: kpg.nonce,
+                    provider: provider,
+                    api_key: apiKey,
+                    model: model
+                },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        $result.text('✓ ' + res.data).addClass('kpg-test-success').show();
+                    } else {
+                        $result.text('✗ ' + (res.data || 'Connection failed')).addClass('kpg-test-error').show();
+                    }
+                },
+                error: function() {
+                    $result.text('✗ Network error').addClass('kpg-test-error').show();
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).text('Test Connection');
+                }
+            });
+        });
     });
 
 })(jQuery);

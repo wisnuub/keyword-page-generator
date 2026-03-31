@@ -23,6 +23,7 @@ add_action('wp_ajax_kpg_start_batch', 'kpg_ajax_start_batch');
 add_action('wp_ajax_kpg_process_step', 'kpg_ajax_process_step');
 add_action('wp_ajax_kpg_cancel_batch', 'kpg_ajax_cancel_batch');
 add_action('wp_ajax_kpg_get_templates', 'kpg_ajax_get_templates');
+add_action('wp_ajax_kpg_test_api_key', 'kpg_ajax_test_api_key');
 
 // WP-Cron scheduled generation
 add_action('kpg_cron_process_job', 'kpg_cron_process_single_step');
@@ -705,7 +706,11 @@ function kpg_admin_page() {
                                 </div>
                             </div>
 
-                            <button type="submit" class="kpg-btn kpg-btn-primary">Save AI Settings</button>
+                            <div class="kpg-ai-test-row">
+                                <button type="submit" class="kpg-btn kpg-btn-primary">Save AI Settings</button>
+                                <button type="button" id="kpg-test-api-key" class="kpg-btn kpg-btn-outline">Test Connection</button>
+                                <span id="kpg-test-api-result" class="kpg-test-result" style="display:none;"></span>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -1261,7 +1266,7 @@ function kpg_replace_text_blocks($content, $original_blocks, $rewritten_blocks, 
 }
 
 function kpg_call_ai_api($prompt, $settings) {
-    $api_key = kpg_decrypt($settings['api_key'] ?? '');
+    $api_key = trim(kpg_decrypt($settings['api_key'] ?? ''));
     if (empty($api_key)) {
         return ['success' => false, 'error' => 'No API key configured'];
     }
@@ -1340,7 +1345,7 @@ function kpg_call_anthropic($prompt, $api_key, $model) {
 }
 
 function kpg_call_gemini($prompt, $api_key, $model) {
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . urlencode($model) . ':generateContent?key=' . urlencode($api_key);
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent?key=' . $api_key;
     $response = wp_remote_post($url, [
         'timeout' => 60,
         'headers' => ['Content-Type' => 'application/json'],
@@ -1561,6 +1566,50 @@ function kpg_ajax_get_templates() {
     }
 
     wp_send_json_success(['options' => $options]);
+}
+
+// ============================================================
+// AJAX: Test API Key
+// ============================================================
+
+function kpg_ajax_test_api_key() {
+    check_ajax_referer('kpg_admin_nonce', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+    $provider  = sanitize_text_field($_POST['provider'] ?? '');
+    $raw_key   = sanitize_text_field($_POST['api_key'] ?? '');
+    $model     = sanitize_text_field($_POST['model'] ?? '');
+
+    // If the value looks like a masked key (starts with bullets), use saved key instead
+    if (empty($raw_key) || strpos($raw_key, '••••') !== false) {
+        $saved = kpg_get_ai_settings();
+        $api_key = trim(kpg_decrypt($saved['api_key'] ?? ''));
+    } else {
+        $api_key = trim($raw_key);
+    }
+
+    if (empty($api_key)) {
+        wp_send_json_error('No API key found. Save your key first, then test.');
+    }
+
+    $test_prompt = 'Reply with just the word "ok".';
+
+    if ($provider === 'gemini') {
+        if (empty($model)) $model = 'gemini-2.0-flash';
+        $result = kpg_call_gemini($test_prompt, $api_key, $model);
+    } elseif ($provider === 'anthropic') {
+        if (empty($model)) $model = 'claude-sonnet-4-6';
+        $result = kpg_call_anthropic($test_prompt, $api_key, $model);
+    } else {
+        if (empty($model)) $model = 'gpt-4o-mini';
+        $result = kpg_call_openai($test_prompt, $api_key, $model);
+    }
+
+    if ($result['success']) {
+        wp_send_json_success('Connection successful!');
+    } else {
+        wp_send_json_error($result['error'] ?? 'Unknown error');
+    }
 }
 
 // ============================================================

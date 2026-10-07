@@ -60,6 +60,8 @@ class KPGen_AI {
 
     public static function settings() {
         return wp_parse_args( get_option( self::OPTION, array() ), array(
+            // "wordpress" = the AI provider configured in Settings → Connectors (WordPress 7+).
+            'source'   => self::connectors_exist() ? 'wordpress' : 'key',
             'provider' => 'anthropic',
             'model'    => 'claude-opus-5-5',
             'key'      => '',
@@ -69,7 +71,34 @@ class KPGen_AI {
 
     public static function is_configured() {
         $s = self::settings();
+        if ( 'wordpress' === $s['source'] ) {
+            return self::connectors_ready();
+        }
         return '' !== $s['key'] && '' !== $s['model'];
+    }
+
+    /**
+     * Whether this WordPress has the AI Client and Connectors (7.0+).
+     */
+    public static function connectors_exist() {
+        return function_exists( 'wp_ai_client_prompt' ) && function_exists( 'wp_supports_ai' );
+    }
+
+    /**
+     * Whether a connector that can generate text is set up. Cached briefly,
+     * since providers may look up their model list to answer.
+     */
+    public static function connectors_ready() {
+        if ( ! self::connectors_exist() || ! wp_supports_ai() ) {
+            return false;
+        }
+        $cached = get_transient( 'kpgen_connectors_ready' );
+        if ( false !== $cached ) {
+            return 'yes' === $cached;
+        }
+        $ready = true === wp_ai_client_prompt( 'Test' )->is_supported_for_text_generation();
+        set_transient( 'kpgen_connectors_ready', $ready ? 'yes' : 'no', 10 * MINUTE_IN_SECONDS );
+        return $ready;
     }
 
     /**
@@ -334,6 +363,11 @@ class KPGen_AI {
      */
     public static function call( $system, $user, $settings = null ) {
         $settings = $settings ?: self::settings();
+
+        if ( 'wordpress' === $settings['source'] ) {
+            return self::call_connectors( $system, $user );
+        }
+
         $key      = self::decrypt( $settings['key'] );
         $model    = trim( $settings['model'] );
 
@@ -352,6 +386,24 @@ class KPGen_AI {
             default:
                 return self::call_anthropic( $system, $user, $key, $model );
         }
+    }
+
+    /**
+     * Use the provider the site owner set up in Settings → Connectors.
+     */
+    private static function call_connectors( $system, $user ) {
+        if ( ! self::connectors_exist() || ! wp_supports_ai() ) {
+            return new WP_Error( 'kpgen_ai_connectors', __( 'WordPress Connectors are not available on this site. Choose “My own API key” on the AI rewriting tab.', 'keyword-page-generator' ) );
+        }
+        $text = wp_ai_client_prompt( $user )
+            ->using_system_instruction( $system )
+            ->using_max_tokens( 16000 )
+            ->generate_text();
+
+        if ( is_wp_error( $text ) ) {
+            return $text;
+        }
+        return '' !== trim( (string) $text ) ? (string) $text : new WP_Error( 'kpgen_ai_empty', __( 'The AI returned an empty response.', 'keyword-page-generator' ) );
     }
 
     private static function post( $url, array $headers, array $body ) {

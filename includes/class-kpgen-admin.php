@@ -254,6 +254,36 @@ class KPGen_Admin {
             <section class="kpgen-panel" data-panel="ai" hidden>
                 <form id="kpgen-ai-form" class="kpgen-card kpgen-narrow" autocomplete="off">
                     <p><?php esc_html_e( 'Optional. When enabled for a run, each generated page’s paragraphs and headings are reworded by the AI model you choose. Tags, links and images are checked and left untouched; if the model changes them, the original text is kept.', 'keyword-page-generator' ); ?></p>
+
+                    <?php if ( KPGen_AI::connectors_exist() ) : ?>
+                    <fieldset class="kpgen-source">
+                        <label>
+                            <input type="radio" name="source" value="wordpress" <?php checked( $ai['source'], 'wordpress' ); ?>>
+                            <strong><?php esc_html_e( 'Use WordPress Connectors', 'keyword-page-generator' ); ?></strong> <?php esc_html_e( '(recommended)', 'keyword-page-generator' ); ?>
+                            <span class="description">
+                                <?php
+                                if ( KPGen_AI::connectors_ready() ) {
+                                    esc_html_e( 'Ready — uses the AI provider set up in Settings → Connectors.', 'keyword-page-generator' );
+                                } else {
+                                    printf(
+                                        /* translators: %s: link to the Connectors screen */
+                                        esc_html__( 'No AI provider is connected yet. Set one up in %s.', 'keyword-page-generator' ),
+                                        '<a href="' . esc_url( admin_url( 'options-connectors.php' ) ) . '">' . esc_html__( 'Settings → Connectors', 'keyword-page-generator' ) . '</a>'
+                                    );
+                                }
+                                ?>
+                            </span>
+                        </label>
+                        <label>
+                            <input type="radio" name="source" value="key" <?php checked( $ai['source'], 'key' ); ?>>
+                            <strong><?php esc_html_e( 'Use my own API key', 'keyword-page-generator' ); ?></strong>
+                        </label>
+                    </fieldset>
+                    <?php else : ?>
+                        <input type="hidden" name="source" value="key">
+                    <?php endif; ?>
+
+                    <div class="kpgen-key-fields">
                     <div class="kpgen-row">
                         <label for="kpgen-provider"><?php esc_html_e( 'Provider', 'keyword-page-generator' ); ?></label>
                         <select id="kpgen-provider" name="provider">
@@ -272,11 +302,12 @@ class KPGen_Admin {
                         <input type="password" id="kpgen-key" name="key" placeholder="<?php echo '' !== $ai['key'] ? esc_attr__( 'Saved — leave empty to keep it', 'keyword-page-generator' ) : esc_attr__( 'Paste your API key', 'keyword-page-generator' ); ?>">
                         <a href="#" id="kpgen-key-link" target="_blank" rel="noopener"><?php esc_html_e( 'Get a key', 'keyword-page-generator' ); ?></a>
                     </div>
+                    </div><!-- .kpgen-key-fields -->
                     <div class="kpgen-row">
                         <label for="kpgen-prompt"><?php esc_html_e( 'Extra instructions', 'keyword-page-generator' ); ?></label>
                         <textarea id="kpgen-prompt" name="prompt" rows="3" placeholder="<?php esc_attr_e( 'Optional, e.g. “Use Australian English and a friendly tone.”', 'keyword-page-generator' ); ?>"><?php echo esc_textarea( $ai['prompt'] ); ?></textarea>
                     </div>
-                    <p class="description"><?php esc_html_e( 'The key is stored encrypted. Page text is sent to the provider you choose; their terms and pricing apply.', 'keyword-page-generator' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Your own key is stored encrypted. Page text is sent to the AI provider you use; their terms and pricing apply.', 'keyword-page-generator' ); ?></p>
                     <p>
                         <button type="submit" class="button button-primary"><?php esc_html_e( 'Save', 'keyword-page-generator' ); ?></button>
                         <button type="button" class="button" id="kpgen-test"><?php esc_html_e( 'Test connection', 'keyword-page-generator' ); ?></button>

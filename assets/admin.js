@@ -285,6 +285,13 @@
         syncProvider();
     });
 
+    function syncSource() {
+        var $checked = $('input[name="source"]:checked');
+        var own = !$checked.length || $checked.val() === 'key';
+        $('.kpgen-key-fields').toggle(own);
+    }
+    $(document).on('change', 'input[name="source"]', syncSource);
+
     $('#kpgen-ai-form').on('submit', function (e) {
         e.preventDefault();
         var $out = $('#kpgen-ai-result').text('…');
@@ -292,7 +299,7 @@
             $out.text(res.success ? t.saved : errorText(res));
             if (res.success) {
                 $('#kpgen-key').val('');
-                cfg.aiReady = res.data.hasKey && $('#kpgen-model').val() !== '';
+                cfg.aiReady = !!res.data.ready;
                 $('#kpgen-ai').prop('disabled', !cfg.aiReady);
             }
         });
@@ -311,6 +318,7 @@
         addPair();
         loadTemplates();
         syncProvider();
+        syncSource();
         var hash = (location.hash || '').replace('#', '');
         if (['history', 'ai'].indexOf(hash) !== -1) showTab(hash);
     });

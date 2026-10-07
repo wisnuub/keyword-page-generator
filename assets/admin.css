@@ -129,3 +129,7 @@
 .kpgen-history .kpgen-trash { color: #b32d2e; }
 
 .kpgen-inline-result { margin-left: 8px; }
+
+.kpgen-source { margin: 0 0 18px; padding: 12px 14px; background: #f6f7f7; border-radius: 6px; border: 0; }
+.kpgen-source label { display: block; margin: 6px 0; }
+.kpgen-source .description { display: block; margin: 2px 0 0 24px; }

@@ -40,3 +40,18 @@ function kpgen_deactivate() {
     wp_unschedule_hook( KPGen_Jobs::CRON_HOOK );
 }
 register_deactivation_hook( __FILE__, 'kpgen_deactivate' );
+
+/**
+ * "Donate" link under the plugin's description on the Plugins screen.
+ *
+ * @param array  $links Row meta links.
+ * @param string $file  Plugin basename.
+ * @return array
+ */
+function kpgen_donate_link( $links, $file ) {
+    if ( plugin_basename( __FILE__ ) === $file ) {
+        $links[] = '<a href="https://paypal.me/toast415" target="_blank" rel="noopener">' . esc_html__( 'Donate', 'keyword-page-generator' ) . '</a>';
+    }
+    return $links;
+}
+add_filter( 'plugin_row_meta', 'kpgen_donate_link', 10, 2 );

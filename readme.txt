@@ -1,5 +1,6 @@
 === Keyword Page Generator ===
-Contributors: wisnuub
+Contributors: wisnoob
+Donate link: https://paypal.me/toast415
 Tags: page generator, bulk pages, location pages, duplicate page, programmatic seo
 Requires at least: 5.9
 Tested up to: 7.1
@@ -36,7 +37,7 @@ Content and excerpt, featured image, page template, categories and tags, Yoast a
 * **Undo**: move every page from a run to the Trash in one click
 * CSV import for long keyword lists
 * Works with the block editor (including Groups and Columns), Classic Editor, Elementor, Divi and WPBakery
-* Optional **AI rewriting** so pages aren't near-duplicates (bring your own API key)
+* Optional **AI rewriting** so pages aren't near-duplicates — uses your WordPress Connectors (WordPress 7+) or your own API key
 
 = A note on SEO =
 
@@ -44,7 +45,9 @@ Search engines treat large numbers of near-identical pages as low quality. Use t
 
 == External services ==
 
-AI rewriting is off by default and only runs when you add an API key and tick "Rewrite the text of each page with AI" for a run. When it runs, the text of each generated page (paragraphs, headings, list items and Elementor text widgets) and the page's keywords are sent to the provider you chose, once per generated page. Nothing is sent otherwise.
+AI rewriting is off by default and only runs when you tick "Rewrite the text of each page with AI" for a run. When it runs, the text of each generated page (paragraphs, headings, list items and Elementor text widgets) and the page's keywords are sent to an AI provider, once per generated page. Nothing is sent otherwise.
+
+On WordPress 7.0 and later, the plugin uses the AI provider you set up in **Settings → Connectors** (the WordPress AI Client), so that provider's terms apply. Alternatively — and on older WordPress versions — you can enter your own API key for one of these services, which the plugin then calls directly:
 
 * **Anthropic (Claude)** — https://api.anthropic.com — [Terms](https://www.anthropic.com/legal/commercial-terms), [Privacy policy](https://www.anthropic.com/legal/privacy)
 * **OpenAI** — https://api.openai.com — [Terms](https://openai.com/policies/terms-of-use), [Privacy policy](https://openai.com/policies/privacy-policy)
@@ -98,6 +101,7 @@ In your WordPress database, encrypted with your site's security keys.
 * AI rewriting works inside Groups and Columns, checks that tags and links are unchanged, and supports current Claude, OpenAI and Gemini models.
 * New: drafts, live title list, missing-keyword warning, History with undo, CSV import, any public post type.
 * Scheduled runs use the site's time zone.
+* AI rewriting can use the provider set up in Settings → Connectors (WordPress 7 AI Client), or your own API key.
 * Moved to Tools → Page Generator.
 
 = 2.3 =

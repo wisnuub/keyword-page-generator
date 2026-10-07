@@ -229,7 +229,9 @@ class KPGen_Jobs {
         $current  = KPGen_AI::settings();
         $provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : 'anthropic';
         $key      = isset( $_POST['key'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['key'] ) ) ) : '';
+        $source   = isset( $_POST['source'] ) && 'wordpress' === $_POST['source'] && KPGen_AI::connectors_exist() ? 'wordpress' : 'key';
         $settings = array(
+            'source'   => $source,
             'provider' => isset( KPGen_AI::PROVIDERS[ $provider ] ) ? $provider : 'anthropic',
             'model'    => isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '',
             // An empty field keeps the saved key; "-" clears it.
@@ -238,7 +240,8 @@ class KPGen_Jobs {
         );
         // phpcs:enable
         update_option( KPGen_AI::OPTION, $settings, false );
-        wp_send_json_success( array( 'hasKey' => '' !== $settings['key'] ) );
+        delete_transient( 'kpgen_connectors_ready' );
+        wp_send_json_success( array( 'ready' => KPGen_AI::is_configured() ) );
     }
 
     public static function ajax_test_ai() {

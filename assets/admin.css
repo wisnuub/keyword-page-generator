@@ -1,0 +1,131 @@
+/* Keyword Page Generator — admin screen. Built on WordPress admin styles. */
+
+.kpgen { max-width: 1180px; }
+.kpgen-intro { font-size: 14px; color: #50575e; max-width: 760px; }
+.kpgen-tabs { margin-bottom: 20px; }
+
+.kpgen-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 20px;
+    align-items: start;
+}
+@media (max-width: 1100px) {
+    .kpgen-grid { grid-template-columns: 1fr; }
+}
+
+.kpgen-card {
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+}
+.kpgen-card h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 16px;
+    font-size: 15px;
+}
+.kpgen-narrow { max-width: 720px; }
+.kpgen-sticky { position: sticky; top: 46px; }
+
+.kpgen-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #2271b1;
+    color: #fff;
+    font-size: 12px;
+}
+
+.kpgen-row {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.kpgen-row label { font-weight: 600; }
+.kpgen-row select,
+.kpgen-row input[type="text"],
+.kpgen-row input[type="password"],
+.kpgen-row textarea { width: 100%; max-width: none; }
+@media (max-width: 782px) {
+    .kpgen-row { grid-template-columns: 1fr; }
+}
+
+.kpgen-pair {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: start;
+    padding: 14px 0;
+    border-top: 1px solid #f0f0f1;
+}
+.kpgen-pair:first-child { border-top: 0; padding-top: 0; }
+.kpgen-pair label span { display: block; font-weight: 600; margin-bottom: 4px; }
+.kpgen-pair input,
+.kpgen-pair textarea { width: 100%; }
+.kpgen-pair .kpgen-remove { color: #b32d2e; margin-top: 26px; }
+@media (max-width: 782px) {
+    .kpgen-pair { grid-template-columns: 1fr; }
+    .kpgen-pair .kpgen-remove { margin-top: 0; justify-self: start; }
+}
+
+.kpgen-actions-inline { display: flex; gap: 8px; margin: 12px 0 0; }
+.kpgen-csv { cursor: pointer; }
+
+.kpgen-mode,
+.kpgen-inline { margin-top: 16px; border: 0; padding: 0; }
+.kpgen-mode legend { font-weight: 600; margin-bottom: 6px; }
+.kpgen-mode label,
+.kpgen-schedule label { display: block; margin: 6px 0; }
+.kpgen-inline label { margin-right: 18px; }
+.kpgen-check { display: block; margin: 14px 0 4px; }
+
+.kpgen-note {
+    margin: 16px 0 0;
+    padding: 10px 12px;
+    background: #f6f7f7;
+    border-left: 3px solid #dba617;
+    color: #50575e;
+}
+
+.kpgen-count { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+.kpgen-titles {
+    max-height: 260px;
+    overflow: auto;
+    margin: 0 0 12px;
+    padding: 8px 10px;
+    background: #f6f7f7;
+    border-radius: 4px;
+    list-style: none;
+}
+.kpgen-titles:empty { display: none; }
+.kpgen-titles li { margin: 0 0 4px; }
+.kpgen-titles .kpgen-more { color: #646970; font-style: italic; }
+.kpgen-warning { color: #8a2424; background: #fcf0f1; padding: 8px 10px; border-radius: 4px; }
+
+.kpgen-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.kpgen-schedule { margin-top: 8px; }
+.kpgen-schedule summary { cursor: pointer; color: #2271b1; }
+.kpgen-schedule[open] summary { margin-bottom: 8px; }
+
+.kpgen-status { margin-top: 16px; padding-top: 16px; border-top: 1px solid #f0f0f1; }
+.kpgen-bar { height: 8px; background: #f0f0f1; border-radius: 4px; overflow: hidden; }
+.kpgen-bar span { display: block; height: 100%; width: 0; background: #2271b1; transition: width .3s ease; }
+.kpgen-log { max-height: 220px; overflow: auto; margin: 10px 0 0; }
+.kpgen-log li { margin: 0 0 4px; }
+.kpgen-log-warning { color: #996800; }
+
+.kpgen-history td { vertical-align: top; }
+.kpgen-history details { margin-top: 4px; color: #646970; }
+.kpgen-history-actions { text-align: right; white-space: nowrap; }
+.kpgen-history .kpgen-trash { color: #b32d2e; }
+
+.kpgen-inline-result { margin-left: 8px; }

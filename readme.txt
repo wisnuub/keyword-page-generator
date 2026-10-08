@@ -9,17 +9,17 @@ Stable tag: 3.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Create many pages from one template by swapping keywords — one page per city, service or product. Images, links and layout stay intact.
+Create many pages from one template by swapping keywords: one page per city, service or product. Images, links and layout stay intact.
 
 == Description ==
 
-Write one template page — say, "Plumber in Melbourne" — then list the cities and services you need. Keyword Page Generator creates a copy for each one, with the keywords swapped in the title, URL, content, SEO fields and custom fields.
+Write one template page (say, "Plumber in Melbourne"), then list the cities and services you need. Keyword Page Generator creates a copy for each one, with the keywords swapped in the title, URL, content, SEO fields and custom fields.
 
 = Safe find-and-replace =
 
 Only visible text is changed. Image file names, links, CSS classes and builder settings are left alone, so replacing "Melbourne" never turns `melbourne-office.jpg` into a missing `sydney-office.jpg`.
 
-* Whole words only — "Melbourne" doesn't match inside "Melbournian" — with plurals handled: "plumbers" becomes "electricians".
+* Whole words only ("Melbourne" doesn't match inside "Melbournian"), with plurals handled: "plumbers" becomes "electricians".
 * Capitalisation is kept: MELBOURNE → SYDNEY, melbourne → sydney.
 * All keywords are swapped in one pass, so a new value is never replaced again by another keyword.
 
@@ -37,21 +37,21 @@ Content and excerpt, featured image, page template, categories and tags, Yoast a
 * **Undo**: move every page from a run to the Trash in one click
 * CSV import for long keyword lists
 * Works with the block editor (including Groups and Columns), Classic Editor, Elementor, Divi and WPBakery
-* Optional **AI rewriting** so pages aren't near-duplicates — uses your WordPress Connectors (WordPress 7+) or your own API key
+* Optional **AI rewriting** so pages aren't near-duplicates, using your WordPress Connectors (WordPress 7+) or your own API key
 
 = A note on SEO =
 
-Search engines treat large numbers of near-identical pages as low quality. Use this to save typing, then give each page something genuinely specific — a local photo, a review, opening hours, a map — before you publish.
+Search engines treat large numbers of near-identical pages as low quality. Use this to save typing, then, before you publish, give each page something genuinely specific: a local photo, a review, opening hours or a map.
 
 == External services ==
 
 AI rewriting is off by default and only runs when you tick "Rewrite the text of each page with AI" for a run. When it runs, the text of each generated page (paragraphs, headings, list items and Elementor text widgets) and the page's keywords are sent to an AI provider, once per generated page. Nothing is sent otherwise.
 
-On WordPress 7.0 and later, the plugin uses the AI provider you set up in **Settings → Connectors** (the WordPress AI Client), so that provider's terms apply. Alternatively — and on older WordPress versions — you can enter your own API key for one of these services, which the plugin then calls directly:
+On WordPress 7.0 and later, the plugin uses the AI provider you set up in **Settings → Connectors** (the WordPress AI Client), so that provider's terms apply. Alternatively, and on older WordPress versions, you can enter your own API key for one of these services, which the plugin then calls directly:
 
-* **Anthropic (Claude)** — https://api.anthropic.com — [Terms](https://www.anthropic.com/legal/commercial-terms), [Privacy policy](https://www.anthropic.com/legal/privacy)
-* **OpenAI** — https://api.openai.com — [Terms](https://openai.com/policies/terms-of-use), [Privacy policy](https://openai.com/policies/privacy-policy)
-* **Google Gemini** — https://generativelanguage.googleapis.com — [Terms](https://ai.google.dev/gemini-api/terms), [Privacy policy](https://policies.google.com/privacy)
+* **Anthropic (Claude)**: https://api.anthropic.com ([Terms](https://www.anthropic.com/legal/commercial-terms), [Privacy policy](https://www.anthropic.com/legal/privacy))
+* **OpenAI**: https://api.openai.com ([Terms](https://openai.com/policies/terms-of-use), [Privacy policy](https://openai.com/policies/privacy-policy))
+* **Google Gemini**: https://generativelanguage.googleapis.com ([Terms](https://ai.google.dev/gemini-api/terms), [Privacy policy](https://policies.google.com/privacy))
 
 Usage is billed by the provider to your own account.
 
@@ -65,11 +65,11 @@ Usage is billed by the provider to your own account.
 
 = How do I write the template? =
 
-Write it as a normal page for one case, using the exact words you want swapped — for example "Melbourne" and "Plumber". Then enter "Melbourne" as a keyword and the other cities as its values.
+Write it as a normal page for one case, using the exact words you want swapped, for example "Melbourne" and "Plumber". Then enter "Melbourne" as a keyword and the other cities as its values.
 
 = Can I undo a run? =
 
-Yes. On the History tab, click "Undo — move to Trash". The pages can still be restored from the Trash.
+Yes. On the History tab, click "Undo (move to Trash)". The pages can still be restored from the Trash.
 
 = Is there a limit? =
 

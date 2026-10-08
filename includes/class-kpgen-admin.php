@@ -239,7 +239,7 @@ class KPGen_Admin {
                                     <td><?php echo esc_html( $row['live'] ); ?></td>
                                     <td class="kpgen-history-actions">
                                         <?php if ( $row['live'] ) : ?>
-                                            <button type="button" class="button-link kpgen-trash" data-batch="<?php echo esc_attr( $row['id'] ); ?>" data-count="<?php echo esc_attr( $row['live'] ); ?>"><?php esc_html_e( 'Undo — move to Trash', 'keyword-page-generator' ); ?></button>
+                                            <button type="button" class="button-link kpgen-trash" data-batch="<?php echo esc_attr( $row['id'] ); ?>" data-count="<?php echo esc_attr( $row['live'] ); ?>"><?php esc_html_e( 'Undo (move to Trash)', 'keyword-page-generator' ); ?></button>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

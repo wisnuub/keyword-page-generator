@@ -209,7 +209,7 @@ class KPGen_Generator {
             'post_status'    => array( 'draft', 'pending', 'private', 'auto-draft' ),
             'posts_per_page' => 100,
             'fields'         => 'ids',
-            'meta_key'       => self::PREVIEW_META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_query_meta_key -- small, admin-only.
+            'meta_key'       => self::PREVIEW_META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- small, admin-only.
         ) );
         foreach ( $ids as $id ) {
             wp_delete_post( $id, true );
@@ -241,8 +241,8 @@ class KPGen_Generator {
             'post_status'    => $status,
             'posts_per_page' => -1,
             'fields'         => 'ids',
-            'meta_key'       => self::BATCH_META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_query_meta_key
-            'meta_value'     => $batch, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_query_meta_value
+            'meta_key'       => self::BATCH_META, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+            'meta_value'     => $batch, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
         ) );
     }
 

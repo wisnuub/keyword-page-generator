@@ -213,7 +213,7 @@ class KPGen_Jobs {
             'posts_per_page' => 500,
             'orderby'        => 'title',
             'order'          => 'ASC',
-            'meta_query'     => array( array( 'key' => KPGen_Generator::BATCH_META, 'compare' => 'NOT EXISTS' ) ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_query_meta_query -- hide generated pages from the template list.
+            'meta_query'     => array( array( 'key' => KPGen_Generator::BATCH_META, 'compare' => 'NOT EXISTS' ) ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- hide generated pages from the template list.
         ) );
         wp_send_json_success( array_map( function ( $p ) {
             return array(
